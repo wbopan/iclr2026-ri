@@ -1,0 +1,54 @@
+# LaTeX temporary files
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex.gz(busy)
+*.pdfsync
+*.nav
+*.snm
+*.vrb
+
+# LaTeX build artifacts
+*.dvi
+*.ps
+*.eps
+
+# BibTeX
+*.bst.bak
+*.bib.bak
+
+# Latexmk
+*.latexmk
+
+# macOS
+.DS_Store
+
+# Editor backups
+*~
+*.swp
+*.swo
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-*
+
+# Build directories
+build/
+dist/
+out/
