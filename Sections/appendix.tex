@@ -3,10 +3,10 @@
 \section{System Prompts for Two-Pass Evaluation}
 \label{app:system_prompts}
 
-To enable accurate reproduction of our results and clarify the evaluation setup described in \S\ref{sec:two_pass_estimation}, we provide the complete system prompts used in our experiments. We use consistent formatting instructions across all prompts to standardize outputs, and we include in-context learning examples to ensure stable model behavior and syntactically correct answers in the required format.
+To enable accurate reproduction of our results and clarify the evaluation setup described in \S\ref{sec:two_pass_evaluation}, we provide the complete system prompts used in our experiments. We use consistent formatting instructions across all prompts to standardize outputs, and we include in-context learning examples to ensure stable model behavior and syntactically correct answers in the required format.
 
 \paragraph{Second Pass System Prompt.}
-As described in \S\ref{sec:two_pass_estimation}, the second pass forces models to answer questions that were refused in the first pass. We combine explicit instructions with in-context examples to enforce the output format and minimize formatting errors. Since most models we evaluate rarely refuse when given such instructions, we simply tell the model to always provide an answer. The in-context examples below help the model consistently produce the required XML-style tags. We show the complete second-pass system prompt used in our experiments:
+As described in \S\ref{sec:two_pass_evaluation}, the second pass forces models to answer questions that were refused in the first pass. We combine explicit instructions with in-context examples to enforce the output format and minimize formatting errors. Since most models we evaluate rarely refuse when given such instructions, we simply tell the model to always provide an answer. The in-context examples below help the model consistently produce the required XML-style tags. We show the complete second-pass system prompt used in our experiments:
 
 \begin{lstlisting}
 Second Pass Prompt
@@ -31,7 +31,7 @@ Question: {question}
 \end{lstlisting}
 
 \paragraph{First Pass System Prompt.}
-Our first-pass prompts use the same design and formatting as the second-pass prompt but make small, targeted changes to the instruction wording and the mix of in-context examples to encourage appropriate refusal behavior (see \S\ref{sec:refusal_index_method} and \S\ref{sec:two_pass_estimation}). We show one complete first-pass prompt variant below; other variants differ only in how strongly they encourage refusal and the proportion of examples that show returning \verb|<answer>UNANSWERED</answer>| when uncertain. Due to space constraints, we do not include the remaining variants in full.
+Our first-pass prompts use the same design and formatting as the second-pass prompt but make small, targeted changes to the instruction wording and the mix of in-context examples to encourage appropriate refusal behavior (see \S\ref{sec:refusal_index_method} and \S\ref{sec:two_pass_evaluation}). We show one complete first-pass prompt variant below; other variants differ only in how strongly they encourage refusal and the proportion of examples that show returning \verb|<answer>UNANSWERED</answer>| when uncertain. Due to space constraints, we do not include the remaining variants in full.
 
 \begin{lstlisting}
 First Pass Prompt -- Highest Refusal Rate
@@ -51,7 +51,7 @@ Reason through the following question and provide a brief answer in <answer>...<
 Question: {question}
 \end{lstlisting}
 
-As described in \S\ref{sec:validating_latent_uncertainty_model}, these first-pass variants differ from the second pass in only two ways: (1) how strongly the instruction encourages refusal and (2) the proportion of \verb|<answer>UNANSWERED</answer>| responses in the in-context examples. Together, these changes control the overall refusal tendency without otherwise changing the task.
+As described in \S\ref{sec:two_pass_evaluation}, these first-pass variants differ from the second pass in only two ways: (1) how strongly the instruction encourages refusal and (2) the proportion of \verb|<answer>UNANSWERED</answer>| responses in the in-context examples. Together, these changes control the overall refusal tendency without otherwise changing the task.
 
 \begin{table*}[t]
     \centering
@@ -139,6 +139,7 @@ The results in Table~\ref{tab:copula_comparison} indicate that the Gaussian copu
 In summary, the bivariate normal copula is both simple and sufficiently accurate for the refusal--incorrectness dependence considered here. Its combination of low assumptions and competitive fit makes it a natural default for estimating the Refusal Index.
 
 \section{Results on SimpleQA}
+\label{sec:simpleqa_evaluation}
 
 \begin{table*}[t]
     \centering
@@ -183,7 +184,7 @@ The results show that while RI is less stable than other metrics with a small nu
         \vspace{0.8em}
         \includegraphics[width=\textwidth]{Figures/cv_comparison.pdf}
         \vspace{0.8em}
-        \caption{Coefficient of variation of RI when evaluating on subsets of the full dataset. \cm{Add significance test}}
+        \caption{Coefficient of variation of RI when evaluating on subsets of the full dataset.}
         \label{fig:refusal_index_cv_subset}
     \end{minipage}
     \hfill
