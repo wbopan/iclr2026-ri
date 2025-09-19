@@ -1,0 +1,33 @@
+# Writing Reference of CER Paper
+
+Source: [Trust or Escalate: LLM Judges with Provable Guarantees for Human Agreement](https://arxiv.org/html/2407.18370v1)
+
+When writing the cer paper, closely following the writing style of the above paper. Snippet of writings are provided below. The specific content of the paper is not relevant to the CER paper.
+
+Characteristics of the writing style:
+
+- Use precise and concise language to describe the method. 
+- Avoid jargon, keeping simple and clear writing style. Be direct.
+- Make the keypoint of each paragraph clearly visible and easy to capture.
+- Properly explain intuition with examples here and there but don't overdo it.
+- Never use bullet points under any cases, use paragraphs instead.
+
+## Writing Snippet
+
+### Abstract
+
+We present a principled approach to provide LLM-based evaluation with a rigorous guarantee of human agreement. We first propose that a reliable evaluation method should not uncritically rely on model preferences for pairwise evaluation, but rather assess the confidence of judge models and selectively decide when to trust its judgement. We then show that under this selective evaluation framework, human agreement can be provably guaranteed—such that the model evaluation aligns with that of humans to a user-specified agreement level. As part of our framework, we also introduce Simulated Annotators, a novel confidence estimation method that significantly improves judge calibration and thus enables high coverage of evaluated instances. Finally, we propose Cascaded Selective Evaluation, where we use cheaper models as initial judges and escalate to stronger models only when necessary—again, while still providing a provable guarantee of human agreement. Experimental results show that Cascaded Selective Evaluation guarantees strong alignment with humans, far beyond what LLM judges could achieve without selective evaluation. For example, on a subset of Chatbot Arena where GPT-4 almost never achieves 80% human agreement, our method, even while employing substantially cost-effective models such as Mistral-7B, guarantees over 80% human agreement with almost 80% test coverage. \faGithub
+
+### Description of Result:
+
+We test our method across preference domains including summarization and real-world user-chatbot interaction, and find that Cascaded Selective Evaluation significantly reduces the evaluation overhead while guaranteeing high agreement. For example, our method can outperform GPT-4 by achieving over 80 % human agreement in ChatArena (Li et al., 2024a), while covering 79.1 % of all samples, among which 88.1 % are evaluated by substantially cheaper Mistral-7B or GPT-3.5 instead of GPT-4. We also show that our abstention policy closely aligns with the subjectivity perceived by humans, rather than relying on shallow features such as length ratio or token overlap. Overall, our work suggests a principled approach to make LLM-based evaluation more reliable yet cost-effective, without exclusively counting on the capabilities of the most advanced LLMs as judges.
+
+### Theory Section
+
+(Note: Unicode math symbols MUST NOT be used in the paper. Use LaTeX instead.)
+
+When performing pairwise evaluation with LLMs, we want a type of guarantee that the model agrees with the majority of human annotators. To realize this guarantee, we propose selective evaluation, a framework that employs an abstention policy to decide whether an LLM is sufficiently confident to evaluate an instance. More formally, let f LM : 𝒳 → 𝒴 denote the LLM judge, where the input x ∈ 𝒳 consists of a query q and a pair of generations ( a 1 , a 2) , and the output y ∈ 𝒴 is a preference label between a 1 and a 2 (e.g., a 1 ≻ a 2). Introducing a confidence measure c LM : 𝒳 → [ 0 , 1 ] , we define selective evaluator as: ( f LM , c LM) ⁢ ( x) = { f LM ⁢ ( x) if ⁢ c LM ⁢ ( x) ≥ λ , ∅	otherwise .  (1) An example of c LM is the probability assigned by f LM to its predicted label (predictive probability), a popular choice of confidence measure in selective classification (Geifman & El-Yaniv, 2017).  λ is a hyperparameter that trades off the precision (i.e., the accuracy of evaluator aligning with human judgements) against the coverage (i.e., the ratio of instances evaluated without abstention). The key advantage of selective evaluation is that by calibrating λ in a principled manner, we can provide a rigorous guarantee of human agreement while maintaining high coverage. That is, given a user-defined risk tolerance α and an error level δ , one can provably guarantee that P ⁢ ( f LM ⁢ ( x) = y human | c LM ⁢ ( x) ≥ λ) ≥ 1 − α (2) is satisfied with probability at least 1 − δ . In the following sections, we illustrate how to search for λ ^ that satisfies this guarantee (§2.1), how to define a good confidence measure c LM (§2.2), and how to extend selective evaluation from a single model to cascades of judge models (§2.3).
+
+### Experiments and Analysis
+
+We first test our approach for evaluating summaries on TL;DR dataset (Stiennon et al., 2020). We use a cascade of Mistral-7B-instruct-v0.2 (Jiang et al., 2023), GPT-3.5-turbo and GPT-4-turbo (Achiam et al., 2023) as judges. Observing that the dataset provides multiple human annotations per input, we use Simulated Annotators (Ind.) with K = N = 5 . We fix the size of calibration set | D cal | = 500 and δ = 0.1 , and run the experiments for 1000 random splits of calibration and test set. For baselines, we consider: (1) Heuristic Selection: using GPT-4 as a judge and setting λ = 1 − α , assuming perfect calibration; (2) Cascaded Heuristic Selection: a variant of Heuristic Selection using the same cascades of judge models as ours; (3) Point-Estimate Calibration: setting λ as the smallest value that satisfies R ^ ⁢ ( λ) ≤ α in D cal , without hypothesis testing.  In Figure 3, we show that human agreement guarantee is satisfied with our approach across all levels of target human agreement, far beyond what GPT-4 can achieve without abstention. Notably, unlike prior works (Gui et al., 2024; Mohri & Hashimoto, 2023) that only controls the risk in expectation over calibration sets (solid blue line), our method guarantees with high probability that each individual run would satisfy the target agreement level (light blue region). Moreover, as shown in right plot, the high agreements can be achieved while the majority of evaluation are done with substantially smaller LLMs than GPT-4. For example, our method can outperform GPT-4 with 80% human agreement, while 75% of the evaluations are done by Mistral-7B or GPT-3.5.
