@@ -1,5 +1,5 @@
 \subsection{Refusal Rate Stability Analysis}
-\label{sec:validating_latent_uncertainty_model}
+\label{sec:refusal_index_validation}
 
 
 \begin{table*}[t]
@@ -30,12 +30,12 @@
 
 
 In this section, we validate the Refusal Index and analyze its stability across different refusal rates. 
-We demonstrate that: (1) the Refusal Index conceptualizes and evaluates the model's refusal-based self-knowledge with an \emph{accuracy-refusal curve}, and (2) the two-pass evaluation returns consistent RI across different refusal rates.
+We demonstrate that: (1) the Refusal Index conceptualizes and evaluates the model's knowledge-aware refusal with an \emph{accuracy-refusal curve}, and (2) the two-pass evaluation returns consistent RI across different refusal rates.
 
 \paragraph{RI Measures Knowledge-aware Refusal with Accuracy-Refusal Curve}
 An accuracy-refusal curve measures knowledge-aware refusal by showing the correct answer rate at each refusal rate for a model on the same dataset.
 While refusing more uncertain questions reduces incorrect answers, it also leads to fewer correct answers due to false refusals. 
-By varying the overall refusal tendency, each model exhibits a trade-off between correct answers and refusal rate. 
+By varying the overall refusal rate, each model exhibits a trade-off between correct answers and refusal rate. 
 As shown in Figure~\ref{fig:acc_rej_plot_with_contour_lines}, fixing any metric constant gives a unique iso-score curve in the accuracy–refusal plane, which describes the accuracy-refusal trade-off relationship assumed by the metric.
 
 \begin{wrapfigure}{r}{0.48\textwidth}
@@ -52,7 +52,7 @@ Compared with heuristic metrics, iso-RI curves have two desirable properties: (1
 Different iso-RI curves yield the same maximum correct answer number when the refusal rate is 0 and reach zero correct answers when the refusal rate is 1; and (2) RI is agnostic to the maximum correct answer number and refusal rate, controlling only the convexity of the curve and capturing how well a model preserves correct answers by reducing false refusals. 
 That is, for two models with the same maximum correct answer number, the one with higher RI retains more correct answers when refusing the same fraction of questions. 
 In contrast, heuristic metrics fail to capture this property, imposing approximately linear accuracy–refusal relationships at fixed scores. 
-In summary, the Refusal Index does not simply reward higher accuracy or lower refusal rates, but captures the level of rank calibration in refusal decisions, distinct from all previous metrics.
+In summary, the Refusal Index does not simply reward higher correct answer rate or lower refusal rates, but captures the level of rank calibration in refusal decisions, distinct from all previous metrics.
 
 % \begin{figure}[t]
 %     \centering

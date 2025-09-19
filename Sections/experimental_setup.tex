@@ -21,7 +21,7 @@ FaithEval tests if the model can faithfully recall the information with a noisy 
 We use all 3 datasets from FaithEval. 
 However, as the \texttt{Unanswerable} and \texttt{Inconsistency} subsets do not have ground truth, which RI needs for the correct answer rate, we create a 1:1 mixed dataset of PreciseWikiQA and FaithEval to report RI.
 
-\paragraph{Baseline Metrics} We compare RI with five metrics from SimpleQA and HalluLens that are used for measuring refusal-based self-knowledge, shown in Table~\ref{tab:baseline_metrics}, including Correct Answer Rate, Refusal Rate, Correct given Attempted (C/A), F-score, and Weighted Score. 
+\paragraph{Baseline Metrics} We compare RI with five metrics from SimpleQA and HalluLens that are used for measuring knowledge-aware refusal, shown in Table~\ref{tab:baseline_metrics}, including Correct Answer Rate, Refusal Rate, Correct given Attempted (C/A), F-score, and Weighted Score. 
 We use $p=0.5$ for the Weighted Score. 
 To produce all metrics, we follow SimpleQA to classify model output into either (1) Correct, (2) Incorrect, or (3) Not Attempted (refusal). 
 Additionally, we further compare RI with calibration metrics AUROC with P(Answering) as an uncertainty estimation method. 
@@ -43,7 +43,7 @@ The AUROC score between P(Answering) and correctness labels can approximately se
         F-score & $2c/(2 - r)$ & Harmonic mean of Correct Answer Rate and C/A \\
         Weighted Score & $c - p(1-r)$ & Weighted difference of $c$ and $r$ \\
         \midrule
-        Refusal Index & Eq. \ref{eq:ri-estimation} & Correlation between refusal decision and incorrectness \\
+        Refusal Index & Eq. \ref{eq:ri-estimation} & Correlation between refusal decision and answer incorrectness \\
         \bottomrule
     \end{tabularx}
     \label{tab:baseline_metrics}

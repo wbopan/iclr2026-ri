@@ -10,7 +10,7 @@ Our interpretable and practical method provides several new insights into model 
 \paragraph{Does prompting models to be more cautious mitigate miscalibration?} LLMs are notorious for their overconfidence; by default, LLMs will try to answer all questions beyond their knowledge. 
 One might wonder whether instructing models to reduce confidence helps with this problem. 
 Our proposed RI gives a more holistic understanding to this question. 
-As shown in Table~\ref{tab:qwen25_simpleqa_prompt_strategies}, while increasing refusal rates increases the correct rate in answered questions (increasing C/A), their RI remains stable and far from perfection. 
+As shown in Table~\ref{tab:qwen25_simpleqa_prompt_strategies}, while increasing refusal rates increases the correct answer rate in answered questions (increasing C/A), their RI remains stable and far from perfection. 
 This means that even when a model shows the same refusal rate as its error rate (no system bias), there still remains a gap from perfect refusal decisions (perfect alignment between refusal and error). 
 In other words, RI indicates and quantifies this gap independent of specific refusal rates from the model.
 
@@ -66,8 +66,8 @@ In Table~\ref{tab:hallu_model_comparison}, each dataset tests model refusal abil
 \textbf{PreciseWiki} requires models to recall information from training data; 
 \textbf{Counterfactual} tests models' ability to refrain from hallucinating from misleading and counterfactual context (e.g., the moon is made of cheese). 
 \textbf{Inconsistency} and \textbf{Unanswerable} test if models refuse when answers are not available, where \textbf{Inconsistency} provides conflicting information and \textbf{Unanswerable} does not provide answers in context.
-Results show that RI values for PreciseWiki are similar to those of SimpleQA, and models generally have good ability to identify and avoid counterfactual context. However, when ground truth becomes unavailable, models are showing much worse self-knowledge. 
-This suggests that models' self-knowledge may rely on existing partial information on the answer; they make poorer knowledge-aware refusals when the answer never appears in training data or context.
+Results show that RI values for PreciseWiki are similar to those of SimpleQA, and models generally have good ability to identify and avoid counterfactual context. However, when ground truth becomes unavailable, models are showing much worse knowledge-aware refusal. 
+This suggests that models' knowledge-aware refusal may rely on existing partial information on the answer; they make poorer knowledge-aware refusals when the answer never appears in training data or context.
 
 \paragraph{Limitations of RI.}
 While the Refusal Index is a useful metric for measuring knowledge-aware refusal, there are limitations that practitioners should be aware of. 

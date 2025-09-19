@@ -9,7 +9,7 @@ This precludes simply counting refusal rates for evaluating self-knowledge.
 For example, if we measure the refusal rate on a set of unanswerable questions, a model designed to have a higher refusal rate can easily achieve a higher score. 
 On the other hand, we want to measure refusal behavior directly without using calibrators like verbalized confidence~\citep{xiong2023can} or outputs from linear probes to replace refusals. 
 The performance of calibrators may not reflect a model's self-knowledge regarding refusals. 
-Therefore, a good metric of refusal-based self-knowledge should have the following properties: (1) quantify model self-knowledge regarding refusals, (2) remain consistent even when a model exhibits different refusal rates, and (3) be derived directly from answers of a blackbox LLM.
+Therefore, a good metric of knowledge-aware refusal should have the following properties: (1) quantify self-knowledge regarding refusals, (2) remain consistent even when a model exhibits different refusal rates, and (3) be derived directly from answers of a blackbox LLM.
 
 \paragraph{Notations.} Following recent factuality evaluations such as SimpleQA~\citep{wei2024measuringshortformfactualitylarge}, we focus on factual questions where model outputs can be classified as either correct or incorrect. 
 To avoid hallucinated responses, models are allowed to abstain by producing outputs such as \emph{``I don't have enough information...''}.
@@ -33,7 +33,7 @@ The Refusal Index is Spearman's rank correlation between the model's refusing pr
 \end{definition}
 
 We use $\rho_S$ to denote the Refusal Index for notational simplicity. 
-To understand the intuition behind the definition, we say a model is \emph{perfect-refusal-self-aware} when the probability of refusal is monotonically increasing with error probability, resulting in the model being more likely to refuse when a question becomes more difficult.
+To understand the intuition behind the definition, we say a model is \emph{perfectly-knowledge-aware} when the probability of refusal is monotonically increasing with error probability, resulting in the model being more likely to refuse when a question becomes more difficult.
 
 \begin{equation}
 P(f_{\text{LM}}(x_i) = \bot) \leq P(f_{\text{LM}}(x_j) = \bot) \iff w_i \leq w_j
@@ -43,7 +43,7 @@ P(f_{\text{LM}}(x_i) = \bot) \leq P(f_{\text{LM}}(x_j) = \bot) \iff w_i \leq w_j
 Note that this differs from error-based calibration metrics like Expected Calibration Error (ECE), which quantify the absolute discrepancy between $r_i$ and $w_i$. 
 In contrast, our approach evaluates only the rank discrepancy between $r_i$ and $w_i$.
 We define the RI as a discrimination property because it captures a more fundamental aspect of refusal-based self-knowledge. 
-While overall refusal rates can be adjusted through input context or model preference learning, the discriminative capability is more robust and consistent. 
+While overall refusal rates can be adjusted through input context or model preference learning, the discriminative capability regarding knowledge-aware refusal is more robust and consistent. 
 In the following sections, we introduce how to estimate the Refusal Index with two evaluation passes (\S\ref{sec:two_pass_evaluation}).
 
 \subsection{Two-Pass Evaluation}
@@ -51,7 +51,7 @@ In the following sections, we introduce how to estimate the Refusal Index with t
 
 A naive way to measure RI is to acquire the probability of refusal $P(f_{\text{LM}}(x_i) = \bot)$ on questions of varying error probabilities. 
 However, refusal probability is not directly accessible from a single evaluation run. 
-To infer the correlation between two latent continuous variables from binary observations, we propose a principled two-pass evaluation process. 
+To infer the Spearman correlation between refusal probabilities and error probabilities from binary observations, we propose a principled two-pass evaluation process. 
 The two-pass evaluation models the refusal decision with two components: (1) treating refusal and correctness as thresholding of their respective probabilities; and (2) modeling their joint distribution with a Gaussian copula. 
 
 
@@ -81,7 +81,7 @@ We perform the second pass only on the subset of questions that were refused in 
 
 \paragraph{Estimating Refusal Index.} We define the aggregated correctness indicator $\hat{W}_i = \mathbf{1}\{W'_i = 1\text{ if } R_i = 1 \text{ else } W_i\}$ as the correctness indicator when the model answered the question. 
 Let the empirical refusal rate be $r=\sum_{i=1}^{|D|} R_i/|D|$ and the incorrect rate be $\mu = \sum_{i=1}^{|D|} \hat{W}_i/|D|$. 
-Under the latent uncertainty model, the pair $(R,\hat{W})$ arises by thresholding a bivariate standard normal vector $(Z_R,Z_W)$ with correlation $\rho$ at
+Under our model, the pair $(R,\hat{W})$ arises by thresholding a bivariate standard normal vector $(Z_R,Z_W)$ with correlation $\rho$ at
 
 $$
 \tau_R=\Phi^{-1}(1-r), \qquad \tau_W=\Phi^{-1}(1-\mu).

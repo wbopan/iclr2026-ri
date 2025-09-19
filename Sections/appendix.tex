@@ -34,7 +34,7 @@ Question: {question}
 Our first-pass prompts use the same design and formatting as the second-pass prompt but make small, targeted changes to the instruction wording and the mix of in-context examples to encourage appropriate refusal behavior (see \S\ref{sec:refusal_index_method} and \S\ref{sec:two_pass_estimation}). We show one complete first-pass prompt variant below; other variants differ only in how strongly they encourage refusal and the proportion of examples that show returning \verb|<answer>UNANSWERED</answer>| when uncertain. Due to space constraints, we do not include the remaining variants in full.
 
 \begin{lstlisting}
-First Pass Prompt -- Highest Refusal Tendency
+First Pass Prompt -- Highest Refusal Rate
 
 EXAMPLE 1
 INPUT: In what year did Baleka Mbete become the Deputy President of South Africa post-apartheid?
@@ -62,8 +62,8 @@ As described in \S\ref{sec:validating_latent_uncertainty_model}, these first-pas
         \toprule
         \textbf{Type} & \textbf{Instruction} & \textbf{UNANSWERED ratio} \\
         \midrule
-        Least Refusal & You only give an answer if you are confident; otherwise you return $<$answer$>$UNANSWERED$<$/answer$>$. & 0.00 \\
-        Moderate Refusal & You are cautious and may return \texttt{UNANSWERED} when unsure. & 0.10 \\
+        Low Refusal & You only give an answer if you are confident; otherwise you return $<$answer$>$UNANSWERED$<$/answer$>$. & 0.00 \\
+        Normal Refusal & You are cautious and may return \texttt{UNANSWERED} when unsure. & 0.10 \\
         High Refusal & You make reasonable guesses from partial information but avoid speculation; return \texttt{UNANSWERED} if not very confident. & 0.40 \\
         Highest Refusal & You are very cautious and prefer \texttt{UNANSWERED} rather than risking a wrong answer. & 0.60 \\
         \bottomrule
@@ -79,7 +79,7 @@ In this section, we compare the Gaussian copula against three alternative copula
 
 
 \paragraph{Evaluation Criteria.}
-We use two criteria to evaluate copula performance: goodness-of-fit and win-rate comparisons between the guassian copula and the alternatives.
+We use two criteria to evaluate copula performance: goodness-of-fit and win-rate comparisons between the Gaussian copula and the alternatives.
 Since the margins are fixed by construction in our two-pass evaluation setup, the natural goodness-of-fit criterion is the multinomial log-likelihood implied by each copula through the resulting 2\,$\times$\,2 cell probabilities. However, since different copulas have varying numbers of parameters (e.g., Student-\emph{t} has 2 parameters while Gaussian has only 1), we must penalize model complexity to ensure fair comparison. We complement the raw log-likelihood with the Akaike Information Criterion (AIC) and Bayesian Information Criterion (BIC):
 \begin{align}
 \text{AIC} &= 2k - 2\ell(\hat{\theta})\\
@@ -147,7 +147,7 @@ In summary, the bivariate normal copula is both simple and sufficiently accurate
     \label{tab:simpleqa_model_comparison}
     \begin{tabularx}{\textwidth}{X c c c c c c}
     \toprule
-    \textbf{Model} & \textbf{Accuracy} & \textbf{Refusal} & \textbf{C / A} & \textbf{F-score} & \textbf{Weighted} & \textbf{Refusal Index} \\
+    \textbf{Model} & \textbf{Correct Answer Rate} & \textbf{Refusal} & \textbf{C / A} & \textbf{F-score} & \textbf{Weighted} & \textbf{Refusal Index} \\
     \midrule
     Qwen2.5-72B                    & 0.05 [0.04, 0.05] & 0.74 [0.73, 0.75] & 0.20 [0.18, 0.22] & 0.07 [0.07, 0.08] & -0.21 [-0.22, -0.20] & 0.49 [0.45, 0.53] \\
     Qwen3-32B                      & 0.03 [0.03, 0.03] & 0.68 [0.67, 0.69] & 0.12 [0.10, 0.15] & 0.05 [0.04, 0.05] & -0.29 [-0.29, -0.28] & 0.34 [0.28, 0.40] \\

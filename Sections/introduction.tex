@@ -14,7 +14,7 @@ We find that existing metrics struggle to capture this important property due to
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.95\linewidth]{Figures/RefusalIndex-Illustration.pdf}
-    \caption{Illustration of Refusal Index (RI). Refusal Index quantifies a model's internal capability to refuse questions beyond its knowledge, by measuring the correlation between refusal decisions and the answer incorrectness. Left: Refusal Index models how correct answer rate drops with increasing refusal rate. Right: Empirical accuracies of the same model with different refusal rates align with the Refusal Index. }
+    \caption{Illustration of Refusal Index (RI). Refusal Index quantifies a model's internal capability to refuse questions beyond its knowledge, by measuring the correlation between refusal decisions and answer incorrectness. Left: Refusal Index models how correct answer rate drops with increasing refusal rate. Right: Empirical correct answer rates of the same model with different refusal rates align with the Refusal Index. }
     \label{fig:refusal_index_illustration}
 \end{figure}
 
@@ -22,7 +22,7 @@ The first limitation is that existing metrics are \textbf{(1) inaccurate} for th
 Prior factuality evaluations~\citep{bangHalluLensLLMHallucination2025,wei2024measuringshortformfactualitylarge, zhang2024rtuninginstructinglargelanguage} report combinations of \emph{correct answer rate} and \emph{refusal rate} to quantify the accuracy of LLM refusals.
 These combinations measure whether a model generates more correct answers while simultaneously refusing more questions it does not know.
 We find that combinations of correct answer rates and refusal rates are not sufficient to measure self-knowledge accurately, especially when models exhibit different refusal rates. 
-This inaccuracy is evidenced in \S\ref{sec:validating_latent_uncertainty_model}: if the same model exhibits different refusal rates, these combinations return varying and biased scores.
+This inaccuracy is evidenced in \S\ref{sec:validating_refusal_index}: if the same model exhibits different refusal rates, these combinations return varying and biased scores.
 
 A more rigorous approach is to measure self-knowledge with \emph{calibration error}~\citep{guo2017calibration}, but it is \textbf{(2) complex} and \textbf{(3) indirect}. 
 Calibration error measures the difference between prediction probabilities and the probability of being correct, which is close to our goal. 
@@ -39,7 +39,7 @@ Then, we run a second evaluation pass to regenerate answers for questions refuse
 Finally, we estimate the Refusal Index using correct answer rates and refusal rates from the two evaluation passes. 
 
 We measure RI across 16 models on 5 datasets and perform extensive analyses. 
-In \S\ref{sec:validating_latent_uncertainty_model}, we first demonstrate how RI quantifies the capability of models to refuse questions they don't know. 
+In \S\ref{sec:validating_refusal_index}, we first demonstrate how RI quantifies the capability of models to refuse questions they don't know. 
 RI parameterizes an accuracy-refusal curve describing how the correct answer rate drops as the refusal rate increases. 
 The curve's convexity uniquely captures a model's ability to reduce false refusals. We illustrate the curve in \Figref{fig:refusal_index_illustration}.
 Then, to empirically validate RI, we first verify that the two-pass evaluation returns consistent RI scores on the same model with different refusal rates, aligning with the accuracy-refusal curve. 
