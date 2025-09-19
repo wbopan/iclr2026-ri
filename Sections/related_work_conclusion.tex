@@ -1,0 +1,19 @@
+\section{Related Works}
+\label{sec:related_works}
+
+\paragraph{Factuality of LLMs}
+
+Factuality assesses an LLM's ability to generate factually correct answers.
+Previous evaluation methods compare LLM responses against external sources to measure factual correctness~\citep{wei2024measuringshortformfactualitylarge, min-etal-2023-factscore, kwiatkowski-etal-2019-natural}.
+Many factuality evaluations focus on measuring hallucination, the phenomenon where models generate answers that contradict available grounding information, whether provided through context or world knowledge~\citep{bangHalluLensLLMHallucination2025}. In contrast, factuality evaluation acknowledges that ground truth may not always be available to the model~\citep{jing2025factuality}.
+To reduce hallucination and improve factuality, some works focus on improving the abstention policy of models by training them to appropriately refuse questions beyond their knowledge boundaries~\citep{cao2024learn, xu2024reliability, ouyang-etal-2022-training}.
+Our metric does not target hallucination rate directly; instead, we evaluate the calibration level through the model's refusal behavior, quantifying the quality of these refusals.
+
+\paragraph{Calibration Evaluation on Black-box Models}
+
+Calibration measures the alignment between a model's output probability and its actual probability of being correct~\citep{guo2017calibration}. It serves as a valuable metric for factuality evaluation, as it quantifies a model's self-awareness of its own knowledge~\citep{kadavath2022mostly, yin-etal-2023-selfaware, agrawal2023hallucinating}. Estimating calibration for any LLM requires inferring uncertainty from text outputs of black-box models. Previous works have proposed using semantic similarity or diversity-based measures~\citep{kuhn-etal-2023-semantic, farquhar-etal-2024-semantic} or auxiliary models~\citep{ulmer-etal-2024-calibrating} to estimate uncertainty, resulting in error-based or rank-based calibration metrics computed from test set outputs~\citep{huang-etal-2024-rank}. However, these methods require training a separate calibrator for each model, which is computationally expensive and model-dependent.
+Our metric measures the correlation between uncertainty and difficulty, which represents a form of rank-based calibration. Our approach is lightweight since we do not estimate uncertainty directly.
+
+\section{Conclusion}
+
+In this work, we introduced Refusal Index, a novel metric to address the unreliability of existing factuality evaluations for LLMs, which are often skewed by prompt design and refusal tendencies. RI provides a principled, calibration-based measure of whether a model ``knows what it doesn't know'' by evaluating the alignment between its refusal to answer and the intrinsic difficulty of a question.  RI not only enables fairer model comparisons but also provides valuable insights for developing better-calibrated and more trustworthy AI systems.

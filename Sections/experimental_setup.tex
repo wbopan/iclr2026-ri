@@ -1,0 +1,55 @@
+\section{Experiments \& Results}
+\label{sec:experiments}
+
+\subsection{Experimental Setup}
+\label{sec:experimental_setup}
+
+\paragraph{Models} We evaluate RI on 16 open-source and proprietary models, covering different model families, sizes, and release dates. 
+Open-source models include \emph{Gemma-3-12B}~\citep{gemma3_2025}, \emph{Qwen3-32B/235B}~\citep{qwen3_2025} in both think and no-think modes, \emph{Qwen2.5-72B-Instruct}~\citep{qwen2_5_2024}, \emph{Llama 3.1 70B} \citep{llama3_2024}, \emph{Mistral-Large-Instruct-2411}~\citep{mistral_large_2_2024}, \emph{GLM-4.5 and GLM-4.5-Air}\citep{glm45_2025} and \emph{DeepSeek-V3-0324}~\citep{deepseek_v3_2024}. 
+For proprietary models, we use \emph{Claude 3.5 haiku} \citep{claude35_2024}, \emph{Claude Sonnet 4} \citep{claude4_2025}, \emph{GPT4.1} and \emph{GPT4.1 mini} \citep{gpt41_2025} and \emph{Gemini 2.5 Flash} and \emph{Gemini 2.5 Flash Lite} \citep{gemini25_2025}. 
+We use temperature=0.7 and top-p=0.95 for all models.
+
+\paragraph{Datasets} We evaluate RI on three scenarios: factual question answering, extrinsic hallucination detection (hallucination from training data), and intrinsic hallucination detection (hallucination from context), all of which require the model's ability to make proper, self-aware refusals. 
+For factual question answering, we use SimpleQA \citep{wei2024measuringshortformfactualitylarge}. 
+SimpleQA contains verifiable, atomic factual questions that are even challenging for frontier LLMs. 
+For extrinsic hallucination detection, we use PreciseWikiQA \citep{bangHalluLensLLMHallucination2025}. 
+PreciseWikiQA is a dynamically generated question-answering dataset from snippets of Wikipedia. 
+It tests if models hallucinate their training data, given that the knowledge (Wikipedia) is assumed to be included in training data. 
+We follow \citet{bangHalluLensLLMHallucination2025} to generate 2000 questions for evaluation. 
+Finally, for intrinsic hallucination detection, we use the 3 datasets from FaithEval \citep{ming2025faithevallanguagemodelstay}. 
+FaithEval tests if the model can faithfully recall the information with a noisy context. 
+We use all 3 datasets from FaithEval. 
+However, as the \texttt{Unanswerable} and \texttt{Inconsistency} subsets do not have ground truth, which RI needs for the correct answer rate, we create a 1:1 mixed dataset of PreciseWikiQA and FaithEval to report RI.
+
+\paragraph{Baseline Metrics} We compare RI with five metrics from SimpleQA and HalluLens that are used for measuring refusal-based self-knowledge, shown in Table~\ref{tab:baseline_metrics}, including Correct Answer Rate, Refusal Rate, Correct given Attempted (C/A), F-score, and Weighted Score. 
+We use $p=0.5$ for the Weighted Score. 
+To produce all metrics, we follow SimpleQA to classify model output into either (1) Correct, (2) Incorrect, or (3) Not Attempted (refusal). 
+Additionally, we further compare RI with calibration metrics AUROC with P(Answering) as an uncertainty estimation method. 
+We follow \citet{wei2024measuringshortformfactualitylarge} to compute P(Answering) by sampling 100 times from each question input under temperature=1 and then setting the prediction probability of the question to be $1 - N_\text{refusal}/N$, where $N_\text{refusal}$ is the number of refusal answers. 
+The AUROC score between P(Answering) and correctness labels can approximately serve as a golden reference for Refusal Index. 
+
+
+\begin{table}[t]
+    \centering
+    \footnotesize
+    \caption{Baseline factuality metrics used for comparison. $c$ and $r$ denotes correct answer rate and refusal rate, respectively.}
+    \begin{tabularx}{\textwidth}{l X l}
+        \toprule
+        \textbf{Metric} & \textbf{Formula} & \textbf{Definition} \\
+        \midrule
+        Correct Answer Rate & $c$ & Proportion of correct answers \\
+        Refusal Rate & $r$ & Proportion of refusal answers \\
+        Correct given Attempted (C/A) & $c/(1 - r)$ & Correct answer rate among answered questions \\
+        F-score & $2c/(2 - r)$ & Harmonic mean of Correct Answer Rate and C/A \\
+        Weighted Score & $c - p(1-r)$ & Weighted difference of $c$ and $r$ \\
+        \midrule
+        Refusal Index & Eq. \ref{eq:ri-estimation} & Correlation between refusal decision and incorrectness \\
+        \bottomrule
+    \end{tabularx}
+    \label{tab:baseline_metrics}
+\end{table}
+
+\paragraph{Adjusting Refusal Rates} We measure how the Refusal Index changes when models exhibit different refusal rates. 
+To this end, we use different system prompts to instruct models to be more proactive or cautious in answering questions. 
+Models are prompted to have different refusal tendencies without degrading their decision quality. 
+Specifically, other than the default system prompt that makes models answer all questions in the second pass, we use four different system prompts to evaluate each model with different refusal rates in the first pass. The details of the system prompts are shown in \S\ref{app:system_prompts}.
