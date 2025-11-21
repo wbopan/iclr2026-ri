@@ -1,19 +1,43 @@
-\section{Related Works}
+\vspace{-0.7em}
+\section{Related Work}
+\vspace{-0.7em}
 \label{sec:related_works}
 
-\paragraph{Factuality of LLMs}
+\noindent\textbf{Factuality evaluation of LLMs.}
+Factuality evaluation measures an LLM's ability to generate correct answers.
+Previous methods compare LLM responses against external sources to assess factual correctness~\citep{wei2024measuringshortformfactualitylarge, min-etal-2023-factscore, kwiatkowski-etal-2019-natural}.
+Many factuality evaluations focus on measuring hallucination, where models generate answers that contradict available information~\citep{bangHalluLensLLMHallucination2025}. Recent work in factuality evaluation recognizes that ground truth may not always be available to the model~\citep{jing2025factuality}.
+Some works improve factuality by training models to refuse questions beyond their knowledge boundaries~\citep{cao2024learn, xu2024reliability, ouyang-etal-2022-training}.
+Our metric evaluates calibration through refusal behavior rather than targeting hallucination rate directly.
 
-Factuality assesses an LLM's ability to generate factually correct answers.
-Previous evaluation methods compare LLM responses against external sources to measure factual correctness~\citep{wei2024measuringshortformfactualitylarge, min-etal-2023-factscore, kwiatkowski-etal-2019-natural}.
-Many factuality evaluations focus on measuring hallucination, the phenomenon where models generate answers that contradict available grounding information, whether provided through context or world knowledge~\citep{bangHalluLensLLMHallucination2025}. In contrast, factuality evaluation acknowledges that ground truth may not always be available to the model~\citep{jing2025factuality}.
-To reduce hallucination and improve factuality, some works focus on improving the abstention policy of models by training them to appropriately refuse questions beyond their knowledge boundaries~\citep{cao2024learn, xu2024reliability, ouyang-etal-2022-training}.
-Our metric does not target hallucination rate directly; instead, we evaluate the calibration level through the model's refusal behavior, quantifying the quality of these refusals.
+\noindent\textbf{Calibration evaluation on black-box models.}
+Calibration measures the alignment between a model's output probability and its actual probability of being correct~\citep{guo2017calibration}. Calibration serves as a valuable factuality metric because it quantifies a model's self-awareness of its own knowledge~\citep{kadavath2022mostly, yin-etal-2023-selfaware, agrawal2023hallucinating}. 
+Estimating calibration for black-box LLMs requires inferring uncertainty from text outputs. Previous works propose semantic similarity measures~\citep{kuhn-etal-2023-semantic, farquhar-etal-2024-semantic} or auxiliary models~\citep{ulmer-etal-2024-calibrating} to estimate uncertainty, producing error-based or rank-based calibration metrics~\citep{huang-etal-2024-rank}. These methods require training a separate calibrator for each model, making them computationally expensive and model-dependent.
+Our metric measures the correlation between uncertainty and difficulty, representing a form of rank-based calibration. Because we do not estimate uncertainty directly, our approach is lightweight.
 
-\paragraph{Calibration Evaluation on Black-box Models}
-
-Calibration measures the alignment between a model's output probability and its actual probability of being correct~\citep{guo2017calibration}. It serves as a valuable metric for factuality evaluation, as it quantifies a model's self-awareness of its own knowledge~\citep{kadavath2022mostly, yin-etal-2023-selfaware, agrawal2023hallucinating}. Estimating calibration for any LLM requires inferring uncertainty from text outputs of black-box models. Previous works have proposed using semantic similarity or diversity-based measures~\citep{kuhn-etal-2023-semantic, farquhar-etal-2024-semantic} or auxiliary models~\citep{ulmer-etal-2024-calibrating} to estimate uncertainty, resulting in error-based or rank-based calibration metrics computed from test set outputs~\citep{huang-etal-2024-rank}. However, these methods require training a separate calibrator for each model, which is computationally expensive and model-dependent.
-Our metric measures the correlation between uncertainty and difficulty, which represents a form of rank-based calibration. Our approach is lightweight since we do not estimate uncertainty directly.
-
+\vspace{-0.7em}
 \section{Conclusion}
+\vspace{-0.7em}
 
-In this work, we introduced Refusal Index, a novel metric to address the unreliability of existing factuality evaluations for LLMs, which are often skewed by prompt design and refusal rate. RI provides a principled, calibration-based measure of knowledge-aware refusal by evaluating the alignment between its refusal to answer and the intrinsic difficulty of a question.  RI not only enables fairer model comparisons but also provides valuable insights for developing better-calibrated and more trustworthy AI systems.
+We propose Refusal Index (RI), a novel metric that measures LLMs' knowledge-aware refusal ability through the correlation between refusal decisions and answer incorrectness, addressing critical limitations of existing factuality evaluation methods. 
+Our two-pass evaluation framework provides a practical and lightweight approach to measure RI, enabling more reliable model comparisons independent of accuracy or refusal rate. 
+This work opens new directions for developing better-calibrated AI systems and provides a foundation for evaluating self-knowledge in LLMs.
+
+\vspace{-0.7em}
+\section*{Ethic Statement}
+\vspace{-0.7em}
+
+This work introduces the Refusal Index to measure knowledge-aware refusal in Large Language Models. Our research uses publicly available datasets (SimpleQA, PreciseWikiQA, FaithEval) and model APIs under their respective terms of service, with all evaluations conducted on established benchmarks without introducing personally identifiable information. While our metric could theoretically inform strategies to manipulate model refusal behavior, we emphasize its intended use for safety evaluation and model development rather than adversarial exploitation. We encourage practitioners to integrate knowledge-aware refusal assessment alongside traditional accuracy metrics when deploying LLMs in factual question-answering systems, particularly in domains where incorrect information could have significant consequences.
+
+\vspace{-0.7em}
+\section*{Reproducibility Statement}
+\vspace{-0.7em}
+
+There are mainly three suites of experiments needed for reproducing all of our results in the paper: computing RI with two-pass evaluation, evaluating RI with different refusal rates, and computing baseline metrics.
+For the first RI evaluation experiment, we have detailed the model scope, decoding settings and datasets used in the \Secref{sec:experimental_setup}. We also provide full prompts in the \Secref{app:system_prompts}. 
+All models and datasets we used are publicly available on Hugging Face. 
+For computing RI, we have provided the Python code snippet for computing RI from correct answer rates and refusal rates in the \Secref{app:ri_implementation}.
+To reproduce our results of RI with different refusal rates, we have detailed the full prompts we used to induce different refusal rates in the \Secref{app:system_prompts}. 
+For computing baseline metrics, we give formulas of all baseline metrics in the table and describe the process to compute AUROC with P(answering) in the \Secref{sec:experimental_setup}.
+In summary, reproducing all of our results is relatively straightforward. 
+We additionally provide source code for running and evaluating all metrics in the supplementary materials.

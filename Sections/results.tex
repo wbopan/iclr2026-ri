@@ -1,58 +1,69 @@
+\vspace{-0.5em}
 \subsection{Refusal Rate Stability Analysis}
+% \vspace{-0.5em}
 \label{sec:refusal_index_validation}
 
 
-\begin{table*}[t]
+\vspace{-0.5em}
+\begin{table*}[thbp]
     \centering
     \small
-    \caption{Score stability across different refusal rates. We run evaluation with different refusal tendencies on SimpleQA for each model. $\Delta_{\text{Metric}}$ denotes the normalized difference between most-refusal and least-refusal runs. We use $p=0.2$ for the Weighted metric. Lower is better.}
+    \caption{Score variability across different refusal rates. We run evaluation with different refusal tendencies on SimpleQA for each model. $\Delta_{\text{Metric}}$ denotes the normalized difference between most-refusal and least-refusal runs. We use $p=0.2$ for the Weighted metric. Lower is better.}
+    \vspace{-0.5em}
     \label{tab:qwen25_simpleqa_prompt_strategies}
     \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.12\textwidth} >{\raggedright\arraybackslash}p{0.15\textwidth} *{6}{>{\centering\arraybackslash}X}}
         \toprule
+        \rowcolor{gray!20}
         \textbf{Type} & \textbf{Model} & \textbf{$\Delta_{\text{Accuracy}}$} & \textbf{$\Delta_{\text{Refusal}}$} & \textbf{$\Delta_{\text{C/A}}$} & \textbf{$\Delta_{\text{F-score}}$} & \textbf{$\Delta_{\text{Weighted}}$} & \textbf{$\Delta_{\text{RI}}$} \\
         \midrule
-        \multirow{5}{*}{\makecell{Normalized \\ Difference}} & Mistral-123B & $-0.40$ & $+0.93$ & $+0.37$ & $-0.16$ & $-0.83$ & $\mathbf{+0.06}$ \\
-         & Qwen2-35B & $-0.47$ & $+0.95$ & $+0.12$ & $-0.31$ & $-0.62$ & $\mathbf{-0.19}$ \\
-         & Qwen2.5-72B & $-0.84$ & $+0.43$ & $+0.50$ & $-0.60$ & $-1.32$ & $\mathbf{-0.07}$ \\
-         & Qwen3-32B & $-0.96$ & $+0.54$ & $+0.48$ & $-0.71$ & $-1.42$ & $\mathbf{+0.14}$ \\
-         & Average & $-0.73$ & $+0.72$ & $+0.50$ & $-0.50$ & $-1.17$ & $\mathbf{+0.08}$ \\
+        \multirow{5}{*}{\makecell{Normalized \\ Difference}} & Mistral-123B & $-0.40$ & $+0.93$ & $+0.37$ & $-0.16$ & $-0.83$ & \cellcolor{green!10}$\mathbf{+0.06}$ \\
+         & Qwen2-35B & $-0.47$ & $+0.95$ & $+0.12$ & $-0.31$ & $-0.62$ & \cellcolor{green!10}$\mathbf{-0.19}$ \\
+         & Qwen2.5-72B & $-0.84$ & $+0.43$ & $+0.50$ & $-0.60$ & $-1.32$ & \cellcolor{green!10}$\mathbf{-0.07}$ \\
+         & Qwen3-32B & $-0.96$ & $+0.54$ & $+0.48$ & $-0.71$ & $-1.42$ & \cellcolor{green!10}$\mathbf{+0.14}$ \\
+         & Average & $-0.73$ & $+0.72$ & $+0.50$ & $-0.50$ & $-1.17$ & \cellcolor{green!10}$\mathbf{+0.08}$ \\
         \midrule
+        \rowcolor{gray!20}
          & \textbf{Model} & \textbf{$CV_{\text{Accuracy}}$} & \textbf{$CV_{\text{Refusal}}$} & \textbf{$CV_{\text{C/A}}$} & \textbf{$CV_{\text{F-score}}$} & \textbf{$CV_{\text{Weighted}}$} & \textbf{$CV_{\text{RI}}$} \\
         \midrule
-        \multirow{5}{*}{\makecell{Coefficient of \\ Variation}} & Mistral-123B & $0.16$ & $0.35$ & $0.14$ & $0.06$ & $0.31$ & $\mathbf{0.04}$ \\
-         & Qwen2-35B & $0.22$ & $0.47$ & $0.06$ & $0.14$ & $0.32$ & $\mathbf{0.09}$ \\
-         & Qwen2.5-72B & $0.35$ & $0.17$ & $0.19$ & $0.26$ & $0.53$ & $\mathbf{0.03}$ \\
-         & Qwen3-32B & $0.35$ & $0.19$ & $0.17$ & $0.28$ & $0.51$ & $\mathbf{0.07}$ \\
-         & Average & $0.29$ & $0.29$ & $0.19$ & $0.21$ & $0.46$ & $\mathbf{0.08}$ \\
+        \multirow{5}{*}{\makecell{Coefficient of \\ Variation}} & Mistral-123B & $0.16$ & $0.35$ & $0.14$ & $0.06$ & $0.31$ & \cellcolor{green!10}$\mathbf{0.04}$ \\
+         & Qwen2-35B & $0.22$ & $0.47$ & $0.06$ & $0.14$ & $0.32$ & \cellcolor{green!10}$\mathbf{0.09}$ \\
+         & Qwen2.5-72B & $0.35$ & $0.17$ & $0.19$ & $0.26$ & $0.53$ & \cellcolor{green!10}$\mathbf{0.03}$ \\
+         & Qwen3-32B & $0.35$ & $0.19$ & $0.17$ & $0.28$ & $0.51$ & \cellcolor{green!10}$\mathbf{0.07}$ \\
+         & Average & $0.29$ & $0.29$ & $0.19$ & $0.21$ & $0.46$ & \cellcolor{green!10}$\mathbf{0.08}$ \\
         \bottomrule
     \end{tabularx}
+    \vspace{-1.5em}
 \end{table*}
 
 
-In this section, we validate the Refusal Index and analyze its stability across different refusal rates. 
-We demonstrate that: (1) the Refusal Index conceptualizes and evaluates the model's knowledge-aware refusal with an \emph{accuracy-refusal curve}, and (2) the two-pass evaluation returns consistent RI across different refusal rates.
+In this section, we validate the Refusal Index across different refusal rates to analyze its stability as a metric for knowledge-aware refusal. 
+Our analysis shows two key findings: (1) the Refusal Index conceptualizes and captures intrinsic knowledge-aware refusal ability through an \emph{accuracy-refusal curve}, and (2) the two-pass evaluation returns consistent RI regardless of a model's refusal rate.
 
-\paragraph{RI Measures Knowledge-aware Refusal with Accuracy-Refusal Curve}
-An accuracy-refusal curve measures knowledge-aware refusal by showing the correct answer rate at each refusal rate for a model on the same dataset.
-While refusing more uncertain questions reduces incorrect answers, it also leads to fewer correct answers due to false refusals. 
-By varying the overall refusal rate, each model exhibits a trade-off between correct answers and refusal rate. 
+\noindent\textbf{RI Measures Knowledge-aware Refusal with Accuracy-Refusal Curve.}
+An accuracy-refusal curve quantifies knowledge-aware refusal by plotting correct answer rate against refusal rate for a model on the same dataset.
+This trade-off emerges because refusing uncertain questions reduces incorrect answers but simultaneously decreases correct answer numbers due to false refusals. 
+Consequently, models face a trade-off between maintaining correct answers and avoiding incorrect ones. 
 As shown in Figure~\ref{fig:acc_rej_plot_with_contour_lines}, fixing any metric constant gives a unique iso-score curve in the accuracy–refusal plane, which describes the accuracy-refusal trade-off relationship assumed by the metric.
 
-\begin{wrapfigure}{r}{0.48\textwidth}
+Iso-RI curves demonstrate two key advantages over heuristic metrics. 
+First, they represent realistic accuracy–refusal trade-offs that match expected model behavior (see Figure~\ref{fig:refusal_index_illustration}, left). 
+All iso-RI curves share the same endpoints: maximum correct answers when refusal rate equals zero, and zero correct answers when refusal rate equals one. Correct answer rate continuously decreases as refusal rate increases.
+Second, RI focuses solely on curve convexity, remaining independent of maximum correct answer rates and refusal rates. 
+This design allows RI to capture how effectively a model preserves correct answers by minimizing false refusals. 
+\begin{wrapfigure}{r}{0.45\textwidth}
     \centering
-    \vspace{-1.5em}
+    \vspace{-1em}
     \includegraphics[width=0.48\textwidth]{Figures/acc_rej_plot_with_contour_lines.pdf}
-    \caption{Comparison of factuality metrics with iso-score accuracy-refusal trade-off curves. C/A, F, and W correspond to Correct / Attempted, F-score, and Weighted score, respectively.}
+    \vspace{-2em}
+    \caption{Comparison of factuality metrics with iso-score accuracy-refusal trade-off curves. C/A, F, and W correspond to Correct / Attempted, F-score, and Weighted score, respectively. Empirical data are from Qwen2.5-72B on SimpleQA.}
     \vspace{-1em}
     \label{fig:acc_rej_plot_with_contour_lines}
 \end{wrapfigure}
 
-
-Compared with heuristic metrics, iso-RI curves have two desirable properties: (1) they represent sensible accuracy–refusal trade-offs matching the expected behavior of the model (see Figure~\ref{fig:refusal_index_illustration}, left). 
-Different iso-RI curves yield the same maximum correct answer number when the refusal rate is 0 and reach zero correct answers when the refusal rate is 1; and (2) RI is agnostic to the maximum correct answer number and refusal rate, controlling only the convexity of the curve and capturing how well a model preserves correct answers by reducing false refusals. 
-That is, for two models with the same maximum correct answer number, the one with higher RI retains more correct answers when refusing the same fraction of questions. 
-In contrast, heuristic metrics fail to capture this property, imposing approximately linear accuracy–refusal relationships at fixed scores. 
-In summary, the Refusal Index does not simply reward higher correct answer rate or lower refusal rates, but captures the level of rank calibration in refusal decisions, distinct from all previous metrics.
+For example, when two models have identical maximum correct answer numbers, the model with higher RI will retain more correct answers at any given refusal rate. 
+The mathematical derivation of these properties is provided in \Secref{app:iso_ri_shape}.
+However, heuristic metrics fail to capture this distinction, instead imposing linear accuracy–refusal relationships at fixed scores. 
+Overall, the Refusal Index measures rank calibration in refusal decisions rather than simply rewarding higher accuracy or lower refusal rates, making it distinct from existing metrics.
 
 % \begin{figure}[t]
 %     \centering
@@ -61,73 +72,86 @@ In summary, the Refusal Index does not simply reward higher correct answer rate 
 %     \label{fig:simpleqa_refusal_index}
 % \end{figure}
 
-\paragraph{RI remains consistent across different refusal rates.}
-To empirically validate RI, we test whether the Refusal Index remains consistent across different refusal rates. 
-For this, we design a set of system prompts that progressively encourage caution in answering to induce different refusal rates, then apply them to the same model on the SimpleQA dataset. 
-Our results demonstrate that RI exhibits remarkable stability across these different refusal rates, while heuristic metrics show substantial variation. 
-As shown in Table~\ref{tab:qwen25_simpleqa_prompt_strategies}, RI exhibits approximately 70\% lower variability compared to heuristic metrics. 
-This empirical finding suggests that prompt-induced changes in refusal rate shift the refusal probability distribution without changing the correlation between refusal probability and error probability. 
-In the appendix, we provide additional validation through goodness-of-fit tests for the Gaussian copula assumption.
+\noindent\textbf{RI remains consistent across different refusal rates.}
+We then empirically validate RI by testing its consistency across varying refusal rates. 
+We use 4 system prompts described in \Secref{sec:experimental_setup} that progressively encourage higher refusal tendency, inducing different refusal rates when applied to the same model on the SimpleQA dataset.
+Complete results for all models on SimpleQA are provided in \Secref{sec:simpleqa_evaluation}. 
+RI demonstrates high stability across different refusal rates while heuristic metrics show substantial variation. 
+Table~\ref{tab:qwen25_simpleqa_prompt_strategies} shows that RI exhibits approximately 70\% lower variability than heuristic metrics. 
+This stability suggests that prompt-induced changes in refusal rate shift the refusal probability distribution without altering the underlying correlation between refusal probability and error probability. 
+In the \Secref{app:copula_validation}, we provide additional validation through goodness-of-fit tests for the Gaussian copula assumption.
 
-
+\vspace{-0.5em}
 \subsection{Alignment with Calibration Methods}
+\vspace{-0.5em}
 
-\paragraph{RI is highly consistent with sampling-based calibration methods.}
-One potential concern with RI is that although it is defined as the rank correlation between refusal probability and error probability, the two-pass evaluation may not faithfully reflect that correlation. 
-To address this, we compare RI values with AUROC scores computed using P(Answering) as an uncertainty estimation method. 
-We choose AUROC with P(Answering) for a fair comparison because it shares the same definition of uncertainty as RI. 
-Specifically, (1) AUROC is a rank-calibration metric that only measures the discriminative ability of refusal and (2) P(Answering) is a direct estimation of the prediction probability for model refusals. 
-While there exist other calibration metrics like ECE, Brier Score, and various uncertainty estimation methods, AUROC with P(Answering) is the most direct measurement of the correlation between refusal and error.
-\Figref{fig:comparison_auroc} shows the results. 
-Among the evaluated metrics, RI demonstrates the strongest positive correlation with AUROC at 85\%, outperforming all other metrics.
-This high agreement between RI and AUROC with P(Answering) suggests that RI accurately reflects the correlation between refusal probability and error probability.
-Meanwhile, RI requires much smaller computational overhead compared to estimating P(Answering) with multiple sampling.
+\noindent\textbf{RI is highly consistent with sampling-based calibration methods.}
+A potential concern arises because RI is defined as rank correlation between refusal probability and error probability, yet the two-pass evaluation may not faithfully capture this correlation. 
+We address this concern by comparing RI values with AUROC scores computed using P(Answering) as an uncertainty estimation method, following \citet{wei2024measuringshortformfactualitylarge}.
+Specifically, we compute P(Answering) by sampling 100 times from each question under temperature=1, then setting the prediction probability to $1 - N_\text{refusal}/N$, where $N_\text{refusal} / N$ is the ratio of refusal answers in the 100 generations. We then compute AUROC scores between P(Answering) and correctness labels.
+AUROC with P(Answering) provides a fair comparison because it shares RI's uncertainty definition, measuring only the discriminative ability of refusal as a rank-calibration metric, while P(Answering) directly estimates prediction probability for model refusals. 
+See Appendix~\ref{app:external-calibration} for a complementary reliability-diagram comparison with linear-probe and APRICOT-style calibrators.
+While there exist other calibration metrics like ECE, Brier Score, and various uncertainty estimation methods, AUROC with P(Answering) serves as a good reference for validating Refusal Index.
+RI demonstrates the strongest positive correlation with AUROC at 85\%, outperforming all other evaluated metrics (\Figref{fig:comparison_auroc}). 
+This high agreement confirms that RI accurately reflects the correlation between refusal probability and error probability. 
+Additionally, RI requires much lower computational overhead than estimating P(Answering) through multiple sampling.
 
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=\linewidth]{Figures/comparison_auroc_panswer.pdf}
-    \caption{Correlation between factuality metrics and AUROC with P(Answering) on SimpleQA. RI shows the highest positive correlation with AUROC while being orders of magnitude cheaper to compute.}
+    \vspace{-2em}
+    \caption{Correlation between factuality metrics and AUROC with P(Answering) on SimpleQA. RI shows the highest positive correlation with AUROC while being much cheaper to compute.}
     \label{fig:comparison_auroc}
+    \vspace{-1.5em}
 \end{figure}
 
+\vspace{-0.5em}
 \subsection{Model Ranking Stability}
+\vspace{-0.5em}
 
-Finally, we study whether the knowledge-aware refusal measured by RI is consistent across different models and datasets. 
-To this end, we measure model ranking stability: does RI rank models consistently in different datasets or evaluation settings? 
-Higher ranking stability suggests that a metric captures genuine, discriminative properties of models. 
-Specifically, we calculate Kendall's $W$ (overall ranking agreement) and Winner Entropy (top-1 consistency) on all 8 evaluation settings (4 refusal-varying evaluations on SimpleQA + 4 hallucination benchmarks). 
-Additionally, to capture the ranking stability of the correlation structure between correct answers and refusals, we want to filter out the sole effect from the correct answer rate or refusal rate. 
-We make the removal by performing an isotonic regression on the correct answer rate or refusal rate across different setups for each model, then remove the regressed values from each metric. We calculate the Kendall's $W$ and Winner Entropy on the residuals, effectively measuring parts of the metric that cannot be explained by correct answer rate or refusal rate alone.
+We examine whether RI consistently measures knowledge-aware refusal across different models and datasets by analyzing model ranking stability. 
+Ranking stability measures whether RI produces consistent model rankings across different datasets and evaluation settings. 
+Higher ranking stability indicates that a metric captures robust, discriminative model properties. 
+We calculate Kendall's $W$ (overall ranking agreement) and Winner Entropy (top-1 consistency) across 8 evaluation settings: 4 refusal-varying evaluations on SimpleQA plus 4 hallucination benchmarks. 
+Because correct answer rate and refusal rate already provide high ranking stability on their own, we need to filter out their monotonic effects to isolate ranking stability of accuracy-refusal trade-off.
+Specifically, we perform isotonic regression on correct answer rate or refusal rate across different setups for each model, then remove the regressed values from each metric. 
+These residuals represent metric components that cannot be explained by correct answer rate or refusal rate alone. We then calculate Kendall's $W$ and Winner Entropy on these residuals.
+We provide detailed procedures in \Secref{app:ranking_metrics}.
 
-\paragraph{RI provides stable model rankings independent of accuracy and refusal rate.} 
-As shown in Table~\ref{tab:ranking_stability}, when removing the monotonic effect of correct answer rate or refusal rate, RI still shows high ranking stability, while heuristic metrics degrade to near random values. 
-We can see that heuristic metrics like F-score and Weighted achieve very good ranking stability, but their Kendall's $W$ and Winner Entropy drop quickly when we remove the monotonic effect from correct answer rate or refusal rate. 
-This result suggests that while heuristic metrics like F-score have high ranking stability, they are mostly explained by correct answer rate or refusal rate. 
-In contrast, RI retains most of its ranking stability even after removing the effects from correct answer rate and refusal rate, indicating that it captures the intrinsic knowledge-aware refusal of models, persisting across different evaluation settings.
+\noindent\textbf{RI provides stable model rankings independent of accuracy and refusal rate.} 
+RI maintains high ranking stability when removing monotonic effects of correct answer rate or refusal rate, while heuristic metrics degrade to near-random stability (Table~\ref{tab:ranking_stability}). 
+Heuristic metrics like F-score and Weighted achieve strong ranking stability initially, but their Kendall's $W$ and Winner Entropy drop dramatically after removing monotonic effects from correct answer rate or refusal rate. 
+This pattern reveals that heuristic metrics derive their ranking stability primarily from correct answer rate or refusal rate rather than the relationship between them. 
+However, RI retains most of its ranking stability after removing these effects, demonstrating that it captures intrinsic knowledge-aware refusal properties that persist across different evaluation settings.
 
 
-\begin{table}[t]
+\textsc{\textnormal{\vspace{-0.5em}
+\begin{table}[thbp]
     \centering
     \small
     \caption{Ranking stability across different evaluation settings. $-\text{Correct}$ and $-\text{Refusal}$ show results after removing monotonic effects of correct answer rate and refusal rate with isotonic regression. $- \text{Both}$ removes both correctness and refusal rates with additive isotonic regression.}
+    \vspace{-0.5em}
     \label{tab:ranking_stability}
     \setlength{\tabcolsep}{4pt}
     \begin{tabular}{lcccccccc}
         \toprule
+        \rowcolor{gray!20}
          & \multicolumn{4}{c}{\textbf{Kendall's W} $\uparrow$} & \multicolumn{4}{c}{\textbf{Winner Entropy} $\downarrow$} \\
         \cmidrule(lr){2-5} \cmidrule(lr){6-9}
+        \rowcolor{gray!20}
         \textbf{Metric} & \textbf{Default} & \textbf{$- \text{Correct}$} & \textbf{$- \text{Refusal}$} & \textbf{$- \text{Both}$} & \textbf{Default} & \textbf{$- \text{Correct}$} & \textbf{$- \text{Refusal}$} & \textbf{$- \text{Both}$} \\
         \midrule
-        Random Value  & 0.25 & 0.25 & 0.25 & 0.25 & 0.61 & 0.61 & 0.61 & 0.61 \\
-        Correct Answer Rate & 0.87 & 0.00 & \textbf{0.48} & 0.39 & \textbf{0.00} & 1.00 & 0.48 & 1.00 \\
-        Refusal Rate & 0.86 & 0.44 & 0.00 & 0.30 & 0.18 & 0.61 & 1.00 & 1.00 \\
+        Random Value  & 0.25 & 0.25 & 0.25 & \cellcolor{green!10}0.25 & 0.61 & 0.61 & 0.61 & \cellcolor{green!10}0.61 \\
+        Correct Answer Rate & 0.87 & 0.00 & \textbf{0.48} & \cellcolor{green!10}0.39 & \textbf{0.00} & 1.00 & 0.48 & \cellcolor{green!10}1.00 \\
+        Refusal Rate & 0.86 & 0.44 & 0.00 & \cellcolor{green!10}0.30 & 0.18 & 0.61 & 1.00 & \cellcolor{green!10}1.00 \\
         \midrule
-        C / A    & 0.69 & \textbf{0.63} & 0.40 & 0.37 & 0.33 & 0.61 & 0.48 & 0.61 \\
-        F-score  & \textbf{0.90} & 0.10 & 0.48 & 0.39 & 0.00 & \textbf{0.18} & 0.48 & 0.52 \\
-        Weighted & 0.87 & 0.60 & 0.25 & 0.32 & 0.33 & 0.33 & \textbf{0.37} & 0.61 \\
+        C / A    & 0.69 & \textbf{0.63} & 0.40 & \cellcolor{green!10}0.37 & 0.33 & 0.61 & 0.48 & \cellcolor{green!10}0.61 \\
+        F-score  & \textbf{0.90} & 0.10 & 0.48 & \cellcolor{green!10}0.39 & 0.00 & \textbf{0.18} & 0.48 & \cellcolor{green!10}0.52 \\
+        Weighted & 0.87 & 0.60 & 0.25 & \cellcolor{green!10}0.32 & 0.33 & 0.33 & \textbf{0.37} & \cellcolor{green!10}0.61 \\
+        \rowcolor{green!10}
         RI       & 0.47 & 0.50 & 0.35 & \textbf{0.49} & 0.47 & 0.33 & 0.61 & \textbf{0.37} \\
         \bottomrule
     \end{tabular}%
-    \\
-\end{table}
+    \vspace{-1.5em}
+\end{table}}}

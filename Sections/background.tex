@@ -1,0 +1,70 @@
+\vspace{-0.7em}
+\section{Knowledge-Aware Refusal in Factual Tasks}
+\vspace{-0.7em}
+\label{sec:bg}
+
+\noindent\textbf{Knowledge-Aware Refusal.}
+Knowledge-aware refusal measures whether a model can appropriately decline to answer questions it doesn't know.
+When we define ``knowing'' as the ability to provide correct answers, knowledge-aware refusal capability can be quantified by the alignment between a model's refusal decisions and its answer incorrectness.
+Specifically, a model good at knowledge-aware refusal shows low refusal rates for questions it can answer correctly, while showing high refusal rates for questions it cannot answer accurately.
+This knowledge-aware refusal ability is fundamental for reliable deployment of LLMs in factual tasks. 
+Previous works have explored to evaluate this capability~\citep{cheng2024aiassistantsknowdont, kapoor2024large}. 
+Among existing approaches, two types of metrics, refusal-rate-based and calibration-based metrics, have been employed to measure knowledge-aware refusal. 
+However, both exhibit distinct limitations in accurately assessing this ability.
+
+\vspace{-0.5em}
+\begin{table}[thbp]
+    \centering
+    \footnotesize
+    \caption{Baseline factuality metrics used for comparison. $c$ and $r$ denote correct answer rate and refusal rate, respectively.}
+    \vspace{-0.5em}
+    \begin{tabularx}{\textwidth}{l l l}
+        \toprule
+        \textbf{Metric} & \textbf{Formula} & \textbf{Definition} \\
+        \midrule
+        Correct Answer Rate & $c$ & Proportion of correct answers \\
+        Refusal Rate & $r$ & Proportion of refusal answers \\
+        Correct given Attempted (C/A) & $c/(1 - r)$ & Correct answer rate among answered questions \\
+        F-score & $2c/(2 - r)$ & Harmonic mean of Correct Answer Rate and C/A \\
+        Weighted Score & $c - p(1-r)$ & Weighted difference of $c$ and $r$ \\
+        \midrule
+        Refusal Index & Eq. (\ref{eq:ri-estimation}) & Correlation between refusal and answer incorrectness \\
+        \bottomrule
+    \end{tabularx}
+    \label{tab:baseline_metrics}
+    \vspace{-0.5em}
+\end{table}
+
+
+\noindent\textbf{Limitations of Refusal-Rate-Based Metrics.}
+Refusal rate alone only measures the frequency of refusals, without capturing the correlation between refusal and answer correctness.
+For instance, one can prompt an LLM to be more cautious, thereby increasing the refusal rate without actually improving the model's knowledge-aware refusal ability.
+To address this limitation, recent works have combined refusal rates with correct answer rates for evaluation.
+The underlying intuition is that if a model refuses more samples while maintaining its correct answer rate, it demonstrates a stronger ability to identify uncertain questions.
+For example, SimpleQA~\citep{wei2024measuringshortformfactualitylarge} employs an F1 score between the correct answer rate within answered questions and the refusal rate to balance over-refusal and over-confidence. 
+We list these combined metrics in Table~\ref{tab:baseline_metrics}.
+However, such combinations of refusal rates and correct answer rates are heuristics designed to penalize over-refusal, which fail to capture the fundamental correlation between refusal and incorrectness. 
+As our experiments demonstrate in \Secref{sec:refusal_index_validation}, these metrics do not measure a consistent underlying ability: when prompting models to increase or decrease their refusal rates, these metric values fluctuate significantly (e.g. F1 score used in SimpleQA varies by up to 70\%)
+
+\noindent\textbf{Limitations of Calibration-Based Metrics}
+Other works employ calibration methods, which first estimate the uncertainty (or conversely, confidence score) of model outputs, then compute the correlation between confidence scores and answer correctness.
+Metrics such as Expected Calibration Error (ECE) and AUROC are commonly used to quantify this relationship.
+To apply calibration methods, previous works have designed various approaches to estimate the uncertainty of model outputs. 
+For example, some methods~\citep{xiong2023can} instruct models to assign verbalized confidence scores to their own outputs, while others~\citep{ulmer-etal-2024-calibrating} train auxiliary models to predict confidence from text outputs. 
+A more faithful approach involves repeatedly sampling multiple outputs for a single question and using the frequency of refusal answers as an uncertainty measure.
+However, the confidence scores derived from these methods cannot fully represent a model's refusal probability. 
+First, studies eliciting verbalized confidence report systematic overconfidence and high ECE, while asking the same model to vote across samples (e.g., SimpleQA) yields frequency-based curves much closer to the diagonal for larger models~\citep{xiong2023can,wei2024measuringshortformfactualitylarge}. 
+Second, auxiliary calibrators such as APRICOT or rank-calibration frameworks can produce near-perfect ECE/AUROC~\citep{ulmer-etal-2024-calibrating,huang-etal-2024-rank}, yet these numbers mainly reflect the auxiliary predictor or ranking procedure rather than the base model's refusal behavior. 
+Third, white-box confidence proxies like P(True) can even appear well calibrated on multiple-choice settings~\citep{kadavath2022mostly}, further showing that calibration verdicts swing with the chosen estimator. 
+Therefore, while these methods provide valuable insights into calibration properties within LLMs, their uncertainty estimates do not directly reflect model refusal probability. 
+In real-world applications, we expect models to abstain from providing uncertain answers. 
+Thus, measuring the correlation between refusal behavior and incorrectness in black-box settings remains an unsolved yet crucial challenge for assessing the factual reliability of language models. Appendix~\ref{app:external-calibration} provides an empirical comparison of three representative calibrators ($P(\mathrm{IK})$, APRICOT, and $P(\mathrm{Answering})$) on Qwen3-32B, showing that they disagree and that only the sampling-based method exposes the over-confidence captured by RI.
+
+\begin{remark}[Properties of Effective Measurement]
+We identify three key properties that an effective metric for knowledge-aware refusal should satisfy:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Faithful:} Accurately quantify knowledge-aware refusal capability.
+    \item \textbf{Consistent:} Remain stable across different refusal rates induced by varying prompts or instructions.
+    \item \textbf{Direct:} Derive directly from black-box LLM refusal decisions, without relying on auxiliary models.
+\end{enumerate} 
+\end{remark}

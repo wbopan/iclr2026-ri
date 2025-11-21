@@ -1,50 +1,54 @@
+
+\vspace{-0.7em}
 \section{Discussion}
+\vspace{-0.7em}
 \label{sec:discussion}
 
-In the previous section, we have validated the Refusal Index with its analytical model and experimental results, showing that the RI uniquely and consistently evaluates the knowledge-aware refusal ability. 
-In this section, we provide insights into LLM factuality through the lens of Refusal Index. 
-Our interpretable and practical method provides several new insights into model calibration that were previously obscured by heuristic metrics. 
 
+\textbf{Does prompting models to be more cautious mitigate miscalibration?} Our results show that prompting strategies have limited impact on knowledge-aware refusal capabilities. 
+LLMs are notorious for overconfidence, answering all questions by default even when they lack knowledge. 
+Instructing models to reduce confidence and refuse more questions might seem to help this problem, but our RI analysis reveals otherwise. 
+Table~\ref{tab:qwen25_simpleqa_prompt_strategies} shows that while increasing refusal rates improves the correct answer rate in answered questions (increasing C/A), RI remain stable and far from perfect. 
+This means that, even when a model's refusal rate matches its error rate (eliminating systematic bias), a significant gap persists between actual refusal decisions and perfect refusal decisions. 
+RI quantifies this gap independent of specific refusal rates, providing a stable measure across different prompting strategies.
 
-
-\paragraph{Does prompting models to be more cautious mitigate miscalibration?} LLMs are notorious for their overconfidence; by default, LLMs will try to answer all questions beyond their knowledge. 
-One might wonder whether instructing models to reduce confidence helps with this problem. 
-Our proposed RI gives a more holistic understanding to this question. 
-As shown in Table~\ref{tab:qwen25_simpleqa_prompt_strategies}, while increasing refusal rates increases the correct answer rate in answered questions (increasing C/A), their RI remains stable and far from perfection. 
-This means that even when a model shows the same refusal rate as its error rate (no system bias), there still remains a gap from perfect refusal decisions (perfect alignment between refusal and error). 
-In other words, RI indicates and quantifies this gap independent of specific refusal rates from the model.
-
-\paragraph{What factors lead to better knowledge-aware refusal?}
-
-\begin{wrapfigure}{r}{0.5\textwidth}
+\begin{wrapfigure}{r}{0.65\textwidth}
+    \vspace{-2em}
     \centering
-    \includegraphics[width=0.45\textwidth]{Figures/simpleqa_refusal_vs_accuracy_scatter.pdf}
+    \includegraphics[width=0.65\textwidth]{Figures/simpleqa_refusal_vs_accuracy_scatter.pdf}
+    \vspace{-1em}
     \caption{Scatter plot of Refusal Index vs. Correct Answer Rate.}
     \label{fig:simpleqa_refusal_vs_accuracy_scatter}
+    \vspace{-1em}
 \end{wrapfigure}
 
-Naturally, we are curious about what factors in LLM designs have the most impact on RI. 
-Within the model scope covered in our test, we didn't find high correlation between RI and model parameter sizes, accuracy, or refusal rates. 
-We plot the relationship between correct answer rate in SimpleQA under normal refusal rates and their average RI, as shown in the scatter plot in \Figref{fig:simpleqa_refusal_vs_accuracy_scatter}. 
-The correct answer rate shows a mere $R^2=0.235$ correlation to Refusal Index, suggesting higher model accuracy at factual tasks does not necessarily lead to more knowledge-aware refusals. 
-Interestingly, we find \emph{model family} is a strong predictor of RI. 
-In our experiments, models from \emph{Claude} and \emph{Qwen} (except Qwen 235B) are well above the regression line, showing above-average knowledge-aware refusal abilities. 
-In contrast, all models from \emph{Gemini}, \emph{GPT-4.1} and \emph{GLM-4.5} are below the regression line. 
-Especially \emph{Claude} models show the highest RI on both Claude-3.5 Haiku and Claude-3.5 Sonnet. 
-These findings hint that the specific training pipeline and data distribution used by different model providers might play a more important role in the knowledge-aware refusals.
 
-\begin{wraptable}{r}{0.6\textwidth}
-    \vspace{-\baselineskip}
+\noindent\textbf{What factors lead to better knowledge-aware refusal?}
+We find that model family is the strongest predictor of knowledge-aware refusal ability, surpassing traditional factors like size and accuracy. 
+We found no strong correlation between RI and model parameter sizes, accuracy, or refusal rates within our tested models. 
+\Figref{fig:simpleqa_refusal_vs_accuracy_scatter} plots the relationship between correct answer rate in SimpleQA and average RI scores, with a regression line showing the expected relationship. 
+The correct answer rate shows only $R^2=0.235$ correlation with Refusal Index, indicating that higher factual accuracy does not necessarily improve knowledge-aware refusals. 
+Notably, model family strongly predicts RI performance. 
+Claude and Qwen models (except Qwen 235B) consistently perform above the regression line, demonstrating superior knowledge-aware refusal abilities. 
+In contrast, all Gemini, GPT-4.1, and GLM-4.5 models fall below the regression line. 
+Specifically, Claude models achieve the highest RI scores across both Claude-3.5 Haiku and Claude-4 Sonnet variants. 
+These findings suggest that training pipelines and data distributions used by different model providers play a more critical role in knowledge-aware refusals than model scale or general accuracy.
+
+\begin{wraptable}{r}{0.65\textwidth}
+    \vspace{-0.5cm}
     \centering
     \caption{Refusal Index results on hallucination benchmarks.}
     \label{tab:hallu_model_comparison}
     \resizebox{\linewidth}{!}{%
     \begin{tabular}{l c c c c}
     \toprule
-    \multirow{3}{*}{\textbf{Model}} & \multicolumn{2}{c}{\textbf{Truth Available}} & \multicolumn{2}{c}{\textbf{Truth Unavailable}} \\
+    \rowcolor{gray!20}
+     & \multicolumn{2}{c}{\textbf{Truth Available}} & \multicolumn{2}{c}{\textbf{Truth Unavailable}} \\
     \cmidrule(lr){2-3} \cmidrule(lr){4-5}
+    \rowcolor{gray!20}
     & \textbf{Precise-} & \textbf{Counter-} & \textbf{Incon-} & \textbf{Unans-} \\
-    & \textbf{Wiki} & \textbf{factual} & \textbf{sistency} & \textbf{werable} \\
+    \rowcolor{gray!20}
+    \multirow{-3}{*}{\textbf{Model}} & \textbf{Wiki} & \textbf{factual} & \textbf{sistency} & \textbf{werable} \\
     \midrule
     Gemma-3-12b & 0.36 & 0.56 & 0.22 & 0.12 \\
     Qwen3-32B & 0.48 & 0.60 & 0.27 & 0.24 \\
@@ -57,22 +61,22 @@ These findings hint that the specific training pipeline and data distribution us
     \end{tabular}%
     }
     \vspace{-0.5em}
-
 \end{wraptable}
 
-\paragraph{Is a model's refusal ability affected by context?} 
-We further expand RI to a more realistic setting where models generate answers conditioned on grounding context. 
-In Table~\ref{tab:hallu_model_comparison}, each dataset tests model refusal ability in different scenarios:
-\textbf{PreciseWiki} requires models to recall information from training data; 
-\textbf{Counterfactual} tests models' ability to refrain from hallucinating from misleading and counterfactual context (e.g., the moon is made of cheese). 
-\textbf{Inconsistency} and \textbf{Unanswerable} test if models refuse when answers are not available, where \textbf{Inconsistency} provides conflicting information and \textbf{Unanswerable} does not provide answers in context.
-Results show that RI values for PreciseWiki are similar to those of SimpleQA, and models generally have good ability to identify and avoid counterfactual context. However, when ground truth becomes unavailable, models are showing much worse knowledge-aware refusal. 
-This suggests that models' knowledge-aware refusal may rely on existing partial information on the answer; they make poorer knowledge-aware refusals when the answer never appears in training data or context.
 
-\paragraph{Limitations of RI.}
-While the Refusal Index is a useful metric for measuring knowledge-aware refusal, there are limitations that practitioners should be aware of. 
-First, as the two-pass evaluation requires instructing the model to either refuse or provide forced answers, it requires a relatively capable model. 
-Second, our formulation and validation of RI are focused on \emph{knowledge-aware refusal}, which may not hold for other kinds of refusals, such as refusals for safety reasons. 
-Finally, from both the definition and experimental results, knowledge-aware refusal is a relatively weak signal compared to other metrics like correct answer rate. 
-Thus, we recommend using larger datasets in evaluation to obtain a more stable RI score. 
-Nevertheless, RI provides a pragmatic metric for knowledge-aware refusal, which is important but overlooked by previous metrics.
+
+\noindent\textbf{Is a model's refusal ability affected by context?} We find that ground truth availability in context significantly impacts knowledge-aware refusal performance, with models struggling most when ground truth is unavailable. 
+We expand RI evaluation to realistic settings where models generate answers conditioned on grounding context with FaithEval. 
+Table~\ref{tab:hallu_model_comparison} presents four scenarios testing different aspects of refusal ability: 
+\textbf{PreciseWiki} requires models to recall information from training data; 
+\textbf{Counterfactual} tests models' ability to avoid hallucinating from misleading context; 
+\textbf{Inconsistency} provides conflicting information requiring refusal; and 
+\textbf{Unanswerable} offers no contextual answers. 
+RI values for PreciseWiki are relatively close to those of SimpleQA, and models demonstrate strong ability to identify and avoid counterfactual context. 
+However, when ground truth becomes unavailable (Inconsistency and Unanswerable scenarios), models exhibit substantially worse knowledge-aware refusal. 
+This pattern suggests that knowledge-aware refusal relies on partial information about answers from training data or context, and models make degraded refusal decisions when answers never appear in their provided context.
+
+In summary, these findings demonstrate that RI captures an essential dimension of model reliability that is absent from existing factuality metrics. 
+While current factuality evaluation and calibration studies show promising results in improving model accuracy and calibration~\citep{kadavathLanguageModelsMostly2022}, RI reveals a different picture. 
+Our results highlight the need to incorporate knowledge-aware refusal evaluation for comprehensive factuality assessment.  
+We also provide a detailed discussion of the limitations of RI in \Secref{app:limitations_of_ri}.

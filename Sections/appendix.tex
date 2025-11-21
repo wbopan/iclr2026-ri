@@ -1,13 +1,29 @@
+\newpage
 \appendix
+
+\section*{Appendix Summary}
+This appendix provides essential background and technical details supporting our Refusal Index evaluation framework. We first discuss the limitations of our approach in \Secref{app:limitations_of_ri}, followed by complete system prompts for the two-pass evaluation methodology in \Secref{app:system_prompts}. We then present comprehensive experimental configurations in \Secref{sec:detailed_experimental_setup} and compare external calibration methods in \Secref{app:external-calibration}. The theoretical foundations are established through validation of the Gaussian copula assumption (\Secref{app:copula_validation}) and mathematical derivations of iso-RI curve properties (\Secref{app:iso_ri_shape}). Complete experimental results on SimpleQA are provided in \Secref{sec:simpleqa_evaluation}. Extended analyses include stability assessments regarding sample size (\Secref{sec:impact_of_number_of_questions}) and prompt design variations (\Secref{sec:prompt_design_evaluation}), along with a ready-to-use Python implementation of our metric (\Secref{app:ri_implementation}). We conclude with ranking stability evaluation methodology (\Secref{app:ranking_metrics}) and an LLM usage declaration.
+
+\section{Limitations of Refusal Index} 
+\label{app:limitations_of_ri}
+The Refusal Index has three key limitations that practitioners should consider. 
+First, the two-pass evaluation requires models capable of following instructions to either refuse questions or provide forced answers, limiting applicability to relatively capable models. 
+Second, our formulation targets knowledge-aware refusal specifically and may not generalize to other refusal types or other applications, such as safety-based refusals, or refusal behavior in non-factual tasks. 
+Finally, knowledge-aware refusal provides a relatively weak signal compared to metrics like correct answer rate, requiring larger datasets for stable RI scores (\Secref{sec:impact_of_number_of_questions}).
+Despite these limitations, RI offers a pragmatic metric for an important capability that previous metrics overlooked.
 
 \section{System Prompts for Two-Pass Evaluation}
 \label{app:system_prompts}
 
-To enable accurate reproduction of our results and clarify the evaluation setup described in \S\ref{sec:two_pass_evaluation}, we provide the complete system prompts used in our experiments. We use consistent formatting instructions across all prompts to standardize outputs, and we include in-context learning examples to ensure stable model behavior and syntactically correct answers in the required format.
+We provide the complete system prompts used in our experiments to enable accurate reproduction. These prompts use consistent formatting instructions to standardize outputs. We include in-context learning examples to ensure stable model behavior and syntactically correct answers in the required format.
 
-\paragraph{Second Pass System Prompt.}
-As described in \S\ref{sec:two_pass_evaluation}, the second pass forces models to answer questions that were refused in the first pass. We combine explicit instructions with in-context examples to enforce the output format and minimize formatting errors. Since most models we evaluate rarely refuse when given such instructions, we simply tell the model to always provide an answer. The in-context examples below help the model consistently produce the required XML-style tags. We show the complete second-pass system prompt used in our experiments:
+\noindent\textbf{Second Pass System Prompt.}
+The second pass forces models to answer questions that were refused in the first pass. We combine explicit instructions with in-context examples to enforce the output format and minimize formatting errors. Most models rarely refuse when given such instructions, so we simply instruct the model to always provide an answer. The in-context examples help the model consistently produce the required XML-style tags. We show the complete second-pass system prompt in Figure~\ref{fig:second_pass_prompt}.
 
+\begin{figure}[th]
+\centering
+\begin{minipage}{\textwidth}
+\small
 \begin{lstlisting}
 Second Pass Prompt
 
@@ -29,10 +45,17 @@ Reason through the following question and provide a brief answer in <answer>...<
 
 Question: {question}
 \end{lstlisting}
+\end{minipage}
+\caption{Second-pass system prompt used to force answers on previously refused questions. The prompt standardizes output format and includes in-context examples to minimize formatting errors.}
+\label{fig:second_pass_prompt}
+\end{figure}
 
-\paragraph{First Pass System Prompt.}
-Our first-pass prompts use the same design and formatting as the second-pass prompt but make small, targeted changes to the instruction wording and the mix of in-context examples to encourage appropriate refusal behavior (see \S\ref{sec:refusal_index_method} and \S\ref{sec:two_pass_evaluation}). We show one complete first-pass prompt variant below; other variants differ only in how strongly they encourage refusal and the proportion of examples that show returning \verb|<answer>UNANSWERED</answer>| when uncertain. Due to space constraints, we do not include the remaining variants in full.
+\noindent\textbf{First Pass System Prompt.}
+Our first-pass prompts use the same design and formatting as the second-pass prompt. However, we make small, targeted changes to the instruction wording and the mix of in-context examples to encourage appropriate refusal behavior. Figure~\ref{fig:first_pass_prompt_highest} shows one complete first-pass prompt variant. Other variants differ only in how strongly they encourage refusal and the proportion of examples that show returning \verb|<answer>UNANSWERED</answer>| when uncertain.
 
+\begin{figure}[th]
+\centering
+\begin{minipage}{\textwidth}
 \begin{lstlisting}
 First Pass Prompt -- Highest Refusal Rate
 
@@ -50,51 +73,148 @@ Reason through the following question and provide a brief answer in <answer>...<
 
 Question: {question}
 \end{lstlisting}
+\end{minipage}
+\caption{First-pass prompt variant that induces the highest refusal rate. The instruction and examples bias toward returning \texttt{UNANSWERED} when uncertain.}
+\label{fig:first_pass_prompt_highest}
+\end{figure}
 
-As described in \S\ref{sec:two_pass_evaluation}, these first-pass variants differ from the second pass in only two ways: (1) how strongly the instruction encourages refusal and (2) the proportion of \verb|<answer>UNANSWERED</answer>| responses in the in-context examples. Together, these changes control the overall refusal tendency without otherwise changing the task.
+These first-pass variants differ from the second-pass prompt (Figure~\ref{fig:second_pass_prompt}) in only two ways: (1) how strongly the instruction encourages refusal and (2) the proportion of \verb|<answer>UNANSWERED</answer>| responses in the in-context examples. These changes control the overall refusal tendency without otherwise changing the task.
 
 \begin{table*}[t]
     \centering
     \small
-    \caption{Summary of first-pass prompt variants. Only the refusal instruction and the proportion of UNANSWERED responses differ across variants; all other elements match the second-pass prompt. Ratios vary by model and dataset (see \S\ref{sec:simpleqa_evaluation}); we report relative levels for brevity.}
+    \caption{Summary of first-pass prompt variants. Only the refusal instruction and the proportion of UNANSWERED responses differ across variants; all other elements match the second-pass prompt. Ratios vary by model and dataset (see \Secref{sec:simpleqa_evaluation}); we report relative levels for brevity.}
     \label{tab:first_pass_prompt_variants}
     \begin{tabularx}{\textwidth}{l X c}
         \toprule
         \textbf{Type} & \textbf{Instruction} & \textbf{UNANSWERED ratio} \\
         \midrule
-        Low Refusal & You only give an answer if you are confident; otherwise you return $<$answer$>$UNANSWERED$<$/answer$>$. & 0.00 \\
-        Normal Refusal & You are cautious and may return \texttt{UNANSWERED} when unsure. & 0.10 \\
-        High Refusal & You make reasonable guesses from partial information but avoid speculation; return \texttt{UNANSWERED} if not very confident. & 0.40 \\
-        Highest Refusal & You are very cautious and prefer \texttt{UNANSWERED} rather than risking a wrong answer. & 0.60 \\
+        Low Refusal & You only give an answer if you are confident; otherwise you return $<$answer$>$UNANSWERED$<$/answer$>$. & 0 / 10 \\
+        Normal Refusal & You are cautious and may return \texttt{UNANSWERED} when unsure. & 1 / 10 \\
+        High Refusal & You make reasonable guesses from partial information but avoid speculation; return \texttt{UNANSWERED} if not very confident. & 4 / 10 \\
+        Highest Refusal & You are very cautious and prefer \texttt{UNANSWERED} rather than risking a wrong answer. & 6 / 10 \\
         \bottomrule
     \end{tabularx}
 \end{table*}
 
+\section{Detailed Experimental Setup}
+\label{sec:detailed_experimental_setup}
+
+This section provides comprehensive details of our experimental methodology to enable reproduction of our results.
+
+\noindent\textbf{Model inference and generation settings.}
+To ensure fair comparison across different language models, we maintained consistent decoding hyperparameters throughout our evaluation.
+Unless explicitly stated otherwise, all models used nucleus sampling with temperature = 0.7, top-p = 0.95, and a maximum generation length of 4096 tokens.
+We served all open-source models using vLLM with eight NVIDIA A800 (80 GB) GPUs, while proprietary models were accessed through their official APIs using identical decoding parameters.
+
+For Qwen3, we evaluated both ``thinking'' and ``non-thinking'' modes to assess the impact of chain-of-thought reasoning on knowledge-aware refusal.
+Qwen3 provides a soft switch mechanism: appending \texttt{/think} or \texttt{/no\_think} to the prompt controls the generation of \verb|<think>| reasoning blocks.
+Following the official Qwen documentation, we used \texttt{/no\_think} to disable thinking mode for non-thinking evaluations.
+
+\noindent\textbf{Answer classification and automatic grading.}
+Our evaluation framework classifies model responses into either correct, incorrect, or refused to enable RI computation.
+We instruct each model to generate responses with an \verb|<answer>| tag containing either a factual answer or a refusal with \verb|<answer>UNANSWERED</answer>|.
+We first detect refusals by scanning for the exact substring \verb|<answer>UNANSWERED</answer>|.
+Remaining responses are classified using the same automatic grading system as SimpleQA to ensure consistency with established benchmarks.
+We employ the same model used in SimpleQA, GPT-4o-mini with default generation settings provided by OpenAI as our automatic grader, which has demonstrated high reliability in SimpleQA evaluation.
+The grader classifies each predicted answer as \textsc{CORRECT}, \textsc{INCORRECT}, or \textsc{NOT\_ATTEMPTED} using the prompt shown in Figure~\ref{fig:llm_grader_prompt}.
+
+\begin{figure}[th]
+\centering
+\begin{minipage}{\textwidth}
+\begin{lstlisting}
+Grade the predicted answer as CORRECT (A), INCORRECT (B), or NOT_ATTEMPTED (C).
+
+Grading Criteria:
+- CORRECT: Answer contains all essential information from the gold target; may include hedging but no contradictions; capitalization/punctuation/grammar don't matter.
+- INCORRECT: Answer contradicts the gold target, even with hedging.
+- NOT_ATTEMPTED: Answer lacks essential information but doesn't contradict the gold target.
+
+Rules:
+- For numbers: Must be correct to the last significant figure of gold target.
+- Information implied by the question doesn't need repeating (e.g., "San Francisco" is correct for "What city is OpenAI in?" when gold target is "San Francisco, California").
+- Minor typos in names are acceptable.
+- Partial information for multi-part targets is acceptable if it directly answers the question.
+- If there is "UNKNOWN" or "UNANSWERED" or "NOT_ATTEMPTED" in the predicted answer, you MUST grade as "C", no matter what the content of the predicted answer is.
+
+<Begin of Question>
+{question}
+<End of Question>
+
+<Begin of Gold Target>
+{answer}
+<End of Gold Target>
+
+<Begin of Predicted Answer>
+{predicted_answer}
+<End of Predicted Answer>
+
+Return the letter "A", "B", or "C" with no other text. The grade is:
+\end{lstlisting}
+\end{minipage}
+\caption{LLM grader prompt used to classify predictions as CORRECT, INCORRECT, or NOT\_ATTEMPTED for both passes.}
+\label{fig:llm_grader_prompt}
+\end{figure}
+
+This LLM grader handles cases where models make refusals but did not return \verb|<answer>UNANSWERED</answer>|. In such cases, the grader classifies these responses as \textsc{NOT\_ATTEMPTED} based on the content of the predicted answer.
+In the second pass, we use the same LLM grader but classify \textsc{NOT\_ATTEMPTED} responses as \textsc{INCORRECT}, as we do not expect refusals in the second pass. This LLM grader is used for all three evaluation scenarios.
+
+\noindent\textbf{Benchmark datasets and evaluation scenarios.}
+Our evaluation encompasses three complementary scenarios that test different aspects of knowledge-aware refusal: factual recall, extrinsic hallucination detection, and intrinsic hallucination detection.
+This comprehensive approach ensures that RI captures refusal behavior across diverse knowledge-intensive tasks.
+
+\textbf{Factual question answering (SimpleQA):} 
+We use SimpleQA to evaluate models' ability to refuse unknown factual information.
+SimpleQA contains 4,326 carefully curated factoid questions spanning science, geography, history, and popular culture.
+Each question has a single, indisputable answer verified by two independent annotators with high inter-annotator agreement.
+This benchmark tests whether models can appropriately refuse questions about facts they may not have learned during training.
+
+\textbf{Extrinsic hallucination detection (PreciseWikiQA):}
+We evaluate models' ability to refuse when they cannot accurately recall information from their training data using PreciseWikiQA from the HalluLens benchmark suite.
+PreciseWikiQA dynamically generates short factual questions from Wikipedia snippets, assuming that Wikipedia content was included in model training.
+The evaluation protocol first assesses model refusal decisions, then classifies non-refused answers as correct, incorrect, or unverifiable using an LLM judge. We use the same LLM grader as in SimpleQA for this task.
+
+\textbf{Intrinsic hallucination detection (FaithEval):}
+We assess models' ability to refuse when provided with insufficient or contradictory context using three tasks from FaithEval.
+This benchmark evaluates knowledge-aware refusal in retrieval-augmented generation scenarios, constructed from ten diverse QA datasets (SQuAD, NewsQA, TriviaQA, NaturalQuestions, SearchQA, HotpotQA, BioASQ, DROP, RACE, and TextbookQA).
+
+The three FaithEval tasks target different contextual challenges:
+\begin{itemize}
+    \item \textbf{Unanswerable Context:} Context is modified to remove supporting evidence (2.4K examples with >98\% human-evaluator agreement on automatic checks)
+    \item \textbf{Inconsistent Context:} Multiple documents with conflicting answers are concatenated (1.5K samples)  
+    \item \textbf{Counterfactual Context:} Context supports false statements (e.g., ``water freezes at 100°C'') using multiple-choice questions (1K samples)
+\end{itemize}
+
+Together, these tasks provide 4.9K contextual QA pairs that reveal models' difficulty in maintaining faithfulness to provided context when information is incomplete or contradictory.
+
+
 \section{Validating the Gaussian Copula Assumption}
 \label{app:copula_validation}
 
-To model the joint dependence between refusal and incorrectness under forced answering in the main text, we use the bivariate normal copula (Gaussian copula). This choice allows us to estimate the Refusal Index by capturing the correlation structure between the latent refusal score and question difficulty while remaining agnostic to the marginal distributions. However, it is important to validate whether this distributional assumption is appropriate for real model behavior.
+We use the bivariate normal copula (Gaussian copula) to model the joint dependence between refusal and incorrectness under forced answering. This choice allows us to estimate the Refusal Index by capturing the correlation structure between the latent refusal score and question difficulty while remaining agnostic to the marginal distributions. We must validate whether this distributional assumption is appropriate for real model behavior.
 
-In this section, we compare the Gaussian copula against three alternative copula families to determine which provides the best fit for modeling refusal behavior. We consider Student-\emph{t}, Gumbel, and Clayton copulas as alternatives, each capturing different forms of dependence structure. We evaluate which copula family best fits the observed refusal patterns across multiple models and prompts.
+We compare the Gaussian copula against three alternative copula families to determine which provides the best fit for modeling refusal behavior. We consider Student-\emph{t}, Gumbel, and Clayton copulas as alternatives, each capturing different forms of dependence structure. We evaluate which copula family best fits the observed refusal patterns across multiple models and prompts.
 
 
-\paragraph{Evaluation Criteria.}
+\noindent\textbf{Evaluation Criteria.}
 We use two criteria to evaluate copula performance: goodness-of-fit and win-rate comparisons between the Gaussian copula and the alternatives.
-Since the margins are fixed by construction in our two-pass evaluation setup, the natural goodness-of-fit criterion is the multinomial log-likelihood implied by each copula through the resulting 2\,$\times$\,2 cell probabilities. However, since different copulas have varying numbers of parameters (e.g., Student-\emph{t} has 2 parameters while Gaussian has only 1), we must penalize model complexity to ensure fair comparison. We complement the raw log-likelihood with the Akaike Information Criterion (AIC) and Bayesian Information Criterion (BIC):
-\begin{align}
-\text{AIC} &= 2k - 2\ell(\hat{\theta})\\
-\text{BIC} &= k\log(n) - 2\ell(\hat{\theta})
-\end{align}
-where $k$ is the number of parameters, $n$ is the sample size, and $\ell(\hat{\theta})$ is the maximized log-likelihood. These criteria penalize more complex dependence structures, providing a principled basis for model selection\textbf{}.
-For the second criterion, we evaluate win rates by comparing how often the Gaussian copula outperforms each alternative across different model-prompt combinations. 
-To challenge the Gaussian choice, we compare it with three standard alternatives that capture different forms of dependence. A Student-\emph{t} copula adds a heavy-tail parameter to the Gaussian structure; a Clayton copula emphasizes lower-tail association and is asymmetric; and a Gumbel copula emphasizes upper-tail association and is also asymmetric. All candidates are fit by maximum likelihood with margins fixed at the empirical refusal and forced-answering error rates for each model-prompt combination. Win rates are computed across these individual model-prompt units to assess the relative performance of each copula family.
 
-\paragraph{Experimental Setup.}
-We systematically evaluate and compare the maximum log-likelihood for each copula family on the SimpleQA dataset. Our evaluation covers all 17 models and 4 first-pass prompts used in the main evaluation (see \S\ref{sec:simpleqa_evaluation}). 
+Since the margins are fixed by construction in our two-pass evaluation setup, the natural goodness-of-fit criterion is the multinomial log-likelihood implied by each copula through the resulting 2\,$\times$\,2 cell probabilities. Different copulas have varying numbers of parameters (e.g., Student-\emph{t} has 2 parameters while Gaussian has only 1), so we must penalize model complexity to ensure fair comparison. We complement the raw log-likelihood with the Akaike Information Criterion (AIC) and Bayesian Information Criterion (BIC):
+\begin{align}
+\text{AIC} &= 2k - 2\ell(\hat{\theta}),\\
+\text{BIC} &= k\log(n) - 2\ell(\hat{\theta}).
+\end{align}
+where $k$ is the number of parameters, $n$ is the sample size, and $\ell(\hat{\theta})$ is the maximized log-likelihood. These criteria penalize more complex dependence structures, providing a principled basis for model selection.
+
+For the second criterion, we evaluate win rates by comparing how often the Gaussian copula outperforms each alternative across different model-prompt combinations. We compare the Gaussian copula with three standard alternatives that capture different forms of dependence. A Student-\emph{t} copula adds a heavy-tail parameter to the Gaussian structure; a Clayton copula emphasizes lower-tail association and is asymmetric; and a Gumbel copula emphasizes upper-tail association and is also asymmetric. All candidates are fit by maximum likelihood with margins fixed at the empirical refusal and forced-answering error rates for each model-prompt combination. Win rates are computed across these individual model-prompt units to assess the relative performance of each copula family.
+
+\noindent\textbf{Experimental Setup.}
+We systematically evaluate and compare the maximum log-likelihood for each copula family on the SimpleQA dataset. Our evaluation covers all 16 models and 4 first-pass prompts used in the main evaluation (see \Secref{sec:simpleqa_evaluation}).
+
 For each model-prompt combination, we obtain a 2\,$\times$\,2 contingency table with margins $(r,\mu)$ representing the refusal rate and error rate respectively. Each copula $C$ maps these margins to cell probabilities $(p_{00},p_{01},p_{10},p_{11})$, and we estimate the copula parameters by maximizing the multinomial likelihood of the observed counts as defined in Equation~\ref{eq:mle}:
 \begin{align}
-\hat{\rho} &= \argmax_{\rho \in (-1,1)} \ell(\rho) \nonumber\\
-\text{where} \quad \ell(\rho) &= \sum_{a,b\in\{0,1\}} n_{ab} \log p_{ab}(\rho) \label{eq:mle}
+\hat{\rho} &= \argmax_{\rho \in (-1,1)} \ell(\rho), \nonumber\\
+\text{where} \quad \ell(\rho) &= \sum_{a,b\in\{0,1\}} n_{ab} \log p_{ab}(\rho). \label{eq:mle}
 \end{align}
 This setup isolates the copula choice while maintaining consistency with the main evaluation framework.
 
@@ -133,15 +253,102 @@ This setup isolates the copula choice while maintaining consistency with the mai
   \end{minipage}
 \end{table*}
 
-The results in Table~\ref{tab:copula_comparison} indicate that the Gaussian copula provides the strongest average fit and, after accounting for complexity, the best overall trade-off between parsimony and data fit. The Student-\emph{t} copula, despite its additional heavy-tail parameter, does not improve the average log-likelihood and is uniformly worse once complexity penalties are applied. This aligns with intuition for 2\,$\times$\,2 data with fixed margins, where heavy tails are weakly identified and tend to degenerate toward the Gaussian case. The asymmetric Clayton and Gumbel copulas trail substantially on both raw fit and information criteria, though they can win occasionally on individual units.
+The results in Table~\ref{tab:copula_comparison} show that the Gaussian copula provides the strongest average fit. After accounting for complexity, it provides the best overall trade-off between parsimony and data fit. The Student-\emph{t} copula, despite its additional heavy-tail parameter, does not improve the average log-likelihood and is uniformly worse once complexity penalties are applied. This aligns with intuition for 2\,$\times$\,2 data with fixed margins, where heavy tails are weakly identified and tend to degenerate toward the Gaussian case. The asymmetric Clayton and Gumbel copulas trail substantially on both raw fit and information criteria, though they can win occasionally on individual units.
 
-\paragraph{Conclusion.} We choose the Gaussian copula for two primary reasons: (1) it provides the better average fit across model-prompt combinations as evidenced by superior log-likelihood, AIC, and BIC scores; and (2) it is the simplest and most interpretable copula family, requiring only a single correlation parameter while making minimal distributional assumptions about the dependence structure.
-In summary, the bivariate normal copula is both simple and sufficiently accurate for the refusal--incorrectness dependence considered here. Its combination of low assumptions and competitive fit makes it a natural default for estimating the Refusal Index.
+\noindent\textbf{Conclusion.} We choose the Gaussian copula for two primary reasons: (1) it provides the better average fit across model-prompt combinations as evidenced by superior log-likelihood, AIC, and BIC scores; and (2) it is the simplest and most interpretable copula family, requiring only a single correlation parameter while making minimal distributional assumptions about the dependence structure.
+
+Consequently, the bivariate normal copula is both simple and sufficiently accurate for the refusal--incorrectness dependence considered here. Its combination of low assumptions and competitive fit makes it a natural default for estimating the Refusal Index.
+
+\section{Fixed Endpoints and Shape of Iso-RI Curves}
+\label{app:iso_ri_shape}
+
+We derive two key properties of the accuracy--refusal curve used in the paper:
+(i) every iso-RI curve passes through the same two endpoints at refusal \(r=0\) and \(r=1\); and
+(ii) when the association between \emph{wrongness} and the \emph{refusal score} is stronger (i.e., larger RI), the curve is higher in its interior, creating more curvature relative to the straight line joining its endpoints.
+
+
+Let \((Z_R,Z_W)\) be jointly standard normal with correlation \(\rho\in(-1,1)\).
+Fix thresholds \(\tau_r,\tau_w\in\mathbb R\) and define
+\[
+R := \mathbf{1}\{Z_R>\tau_r\}\quad\text{(refuse)},\qquad
+W := \mathbf{1}\{Z_W>\tau_w\}\quad\text{(wrong under forced answering)}.
+\]
+The refusal rate is \(r:=\Pr(R=1)=1-\Phi(\tau_r)\).
+The unconditional error rate is \(\pi:=\Pr(W=1)=1-\Phi(\tau_w)\), so the correct answer rate (at \(r=0\)) is \(\mu:=1-\pi=\Phi(\tau_w)\), where \(\Phi\) is the standard normal CDF.
+For a given \(r\in(0,1)\) we take \(\tau_r=\Phi^{-1}(1-r)\).
+We define the \emph{correct answer rate} at refusal \(r\) as
+\begin{equation}
+\label{eq:global-acc}
+a(r;\rho)\ :=\ \Pr(\text{correct and answered})
+\ =\ \Pr(W=0,\ R=0)
+\ =\ \Phi_2\!\bigl(\tau_r,\ \tau_w;\ \rho\bigr).
+\end{equation}
+where \(\Phi_2(\cdot,\cdot;\rho)\) is the bivariate standard normal CDF with correlation \(\rho\).
+We orient the score so that higher \(Z_R\) means ``more refuse'' for items more likely to be wrong (the intended setting for RI, typically \(\rho\ge 0\)).
+
+\textbf{Proposition 1 (Endpoints).}
+For any \(\rho\) and \(\tau_w\),
+\[
+a(0;\rho)=\mu\qquad\text{and}\qquad a(1;\rho)=0.
+\]
+
+\emph{Proof.}
+At \(r=0\) we have \(\tau_r=+\infty\), hence
+\(
+a(0;\rho)=\Phi_2(+\infty,\tau_w;\rho)=\Phi(\tau_w)=\mu.
+\)
+At \(r=1\) we have \(\tau_r=-\infty\), hence
+\(
+a(1;\rho)=\Phi_2(-\infty,\tau_w;\rho)=0.
+\)
+\qed
+
+\emph{Monotonicity in \(r\).}
+Since \(\tau_r=\Phi^{-1}(1-r)\) is strictly decreasing in \(r\) and \(\Phi_2\) is increasing in each argument, \(a(r;\rho)\) is strictly decreasing in \(r\) for fixed \(\rho\).
+
+This makes intuitive sense:
+at \(r=0\) we answer everything, so correct answer rate equals the model's overall accuracy \(\mu\).
+As \(r\to 1\) we answer almost nothing, so the correct answer rate approaches \(0\).
+
+\textbf{Proposition 2 (Monotonicity in \(\rho\)).}
+Fix any interior refusal level \(r\in(0,1)\).
+Then \(a(r;\rho)\) in \eqref{eq:global-acc} is strictly increasing in \(\rho\).
+
+\emph{Proof.}
+With \(r\) fixed, \(\tau_r\) is fixed, and
+\(
+a(r;\rho)=\Phi_2(\tau_r,\tau_w;\rho).
+\)
+The standard identity
+\(
+\frac{\partial}{\partial \rho}\Phi_2(x,y;\rho)=\varphi_2(x,y;\rho)>0
+\)
+ implies
+\(
+\frac{d}{d\rho}a(r;\rho)=\varphi_2(\tau_r,\tau_w;\rho)>0.
+\)
+\qed
+
+\textbf{Corollary (Higher curves with higher RI).}
+All accuracy--refusal curves share endpoints \((r,a)=(0,\mu)\) and \((1,0)\) by Proposition~1.
+If \(\rho_2>\rho_1\) (i.e., higher RI), then by Proposition~2,
+\(
+a(r;\rho_2)>a(r;\rho_1)
+\)
+for every \(r\in(0,1)\).
+Thus the higher-RI curve lies strictly above the lower-RI curve throughout the interior while meeting it at the endpoints, creating greater upward curvature relative to the straight line between \((0,\mu)\) and \((1,0)\).
+
+The intuition is straightforward: at a fixed refusal level, the key factor in \eqref{eq:global-acc} is the joint tail probability \(P_{11}(\rho)\).
+As \(\rho\) increases, wrong items and high-refusal items occur together more often, making the kept (non-refused) set cleaner. This increases the correct answer rate at every interior \(r\).
+Since the endpoints are fixed, the entire curve shifts upward.
+
 
 \section{Results on SimpleQA}
 \label{sec:simpleqa_evaluation}
 
-\begin{table*}[t]
+We provide metrics on all models on SimpleQA in Table~\ref{tab:simpleqa_model_comparison}, the 95\% CI is computed by bootstrap with 1000 samples.
+
+\begin{table*}[h]
     \centering
     \tiny
     \caption{Results on SimpleQA with 95\% CI.}
@@ -150,6 +357,7 @@ In summary, the bivariate normal copula is both simple and sufficiently accurate
     \toprule
     \textbf{Model} & \textbf{Correct Answer Rate} & \textbf{Refusal} & \textbf{C / A} & \textbf{F-score} & \textbf{Weighted} & \textbf{Refusal Index} \\
     \midrule
+    Gemma-3-12B                     & 0.05 [0.04, 0.06] & 0.16 [0.14, 0.17] & 0.06 [0.05, 0.07] & 0.06 [0.05, 0.07] & -0.79 [-0.81, -0.77] & 0.25 [-0.07, 0.19] \\
     Qwen2.5-72B                    & 0.05 [0.04, 0.05] & 0.74 [0.73, 0.75] & 0.20 [0.18, 0.22] & 0.07 [0.07, 0.08] & -0.21 [-0.22, -0.20] & 0.49 [0.45, 0.53] \\
     Qwen3-32B                      & 0.03 [0.03, 0.03] & 0.68 [0.67, 0.69] & 0.12 [0.10, 0.15] & 0.05 [0.04, 0.05] & -0.29 [-0.29, -0.28] & 0.34 [0.28, 0.40] \\
     Qwen3-32B-Think                & 0.04 [0.03, 0.04] & 0.71 [0.70, 0.72] & 0.14 [0.13, 0.16] & 0.06 [0.05, 0.06] & -0.25 [-0.26, -0.24] & 0.34 [0.29, 0.39] \\
@@ -170,12 +378,14 @@ In summary, the bivariate normal copula is both simple and sufficiently accurate
     \end{table*}
 
 \section{Impact of Number of Questions}
+\label{sec:impact_of_number_of_questions}
 
-The estimation of RI relies on parameters ($\mu$, $\sigma$, and $\rho$) derived from the accuracy and refusal rates of our two-pass evaluation. A natural question is how the stability of RI is affected by the number of samples in the evaluation dataset. To investigate this, we assess the stability of RI by measuring its variance across subsets of the evaluation data. We create 50 randomly sampled subsets for various sample sizes (from 50 to 2000) and compute the coefficient of variation (CV) for each size, as shown in Figure~\ref{fig:refusal_index_cv_subset}.
+The estimation of RI is derived from the accuracy and refusal rates of our two-pass evaluation. The stability of RI depends on the number of samples in the evaluation dataset. We assess the stability of RI by measuring its variance across subsets of the evaluation data. We create 50 randomly sampled subsets for various sample sizes (from 50 to 2000) and compute the coefficient of variation (CV) for each size, as shown in Figure~\ref{fig:refusal_index_cv_subset}.
 
-The results show that while RI is less stable than other metrics with a small number of questions, its stability becomes comparable as the sample size increases. For instance, to achieve a CV of 0.1, RI requires about 25\% more samples than the C/A and F-score metrics. This suggests that a slightly larger number of samples is preferable for obtaining a stable RI estimate.
+RI is less stable than other metrics with a small number of questions. However, its stability becomes comparable as the sample size increases. To achieve a CV of 0.1, RI requires about 25\% more samples than the C/A and F-score metrics. Consequently, a slightly larger number of samples is preferable for obtaining a stable RI estimate.
 
 \section{Impact of Prompt Design}
+\label{sec:prompt_design_evaluation}
 
 \begin{figure}[t]
     \centering
@@ -197,6 +407,177 @@ The results show that while RI is less stable than other metrics with a small nu
     \end{minipage}
 \end{figure}
 
-We next examine how variations in prompt design affect the RI evaluation. Our experimental setup uses four distinct first-pass prompts, each with different few-shot examples and instructions, to induce varying refusal rates. For the second pass, a single, simpler prompt is used to compel the model to answer all previously refused questions. Although these prompts are designed to produce different refusal rates, it is crucial to verify that they do not introduce confounding effects on model accuracy, which would in turn impact the RI calculation.
+We examine how variations in prompt design affect the RI evaluation. Our experimental setup uses four distinct first-pass prompts, each with different few-shot examples and instructions, to induce varying refusal rates. For the second pass, a single, simpler prompt is used to compel the model to answer all previously refused questions. These prompts are designed to produce different refusal rates. However, we must verify that they do not introduce confounding effects on model accuracy, which would impact the RI calculation.
 
-To assess this, we measure the accuracy agreement between pairs of prompt strategies. Agreement is calculated as the proportion of questions for which both prompts yielded the same correctness label, considering only the questions answered by both. As shown in Figure~\ref{fig:prompt_acc_agreement}, the accuracy agreement between different first-pass prompts is consistently high (over 90\%). This indicates that the choice of prompt strategy does not significantly alter the model's underlying accuracy on the questions it chooses to answer. Furthermore, the high agreement involving the forced-answer (second-pass) prompt validates its use for effectively estimating the model's baseline accuracy ($\mu$).
+We measure the accuracy agreement between pairs of prompt strategies to assess this. Agreement is calculated as the proportion of questions for which both prompts yielded the same correctness label, considering only the questions answered by both. The accuracy agreement between different first-pass prompts is consistently high (over 90\%), as shown in Figure~\ref{fig:prompt_acc_agreement}. This indicates that the choice of prompt strategy does not significantly alter the model's underlying accuracy on the questions it chooses to answer. The high agreement involving the forced-answer (second-pass) prompt validates its use for effectively estimating the model's baseline accuracy ($\mu$).
+
+\section{Refusal Index Implementation}
+\label{app:ri_implementation}
+
+We provide a minimal Python code snippet for computing the Refusal Index (RI) using tetrachoric correlation. 
+This code snippet demonstrates the calculation of RI from two-pass evaluation metrics as described in \Secref{sec:refusal_index_method}, and is shown in Figure~\ref{fig:ri_implementation_code}.
+
+\begin{figure}[th]
+\centering
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=Python]
+# Refusal Index from two-pass evaluation metrics
+from math import log
+import numpy as np
+from scipy.stats import norm, multivariate_normal
+from scipy.optimize import minimize_scalar
+
+def RI(acc1: float, r: float, acc2: float, n: int = 2000) -> float:
+    if r <= 0.0 or r >= 1.0:
+        return 0.0
+    mu = 1.0 - acc2                                # wrong rate under forced answering
+    acc_att = np.clip(acc1 / max(1e-12, 1.0 - r), 0.0, 1.0)
+    mu_a = 1.0 - acc_att                           # wrong rate on attempted items
+    mu_r = float(np.clip((mu - (1.0 - r) * mu_a) / r, 0.0, 1.0))  # wrong on refused
+    n_r = int(round(n * r)); n_a = n - n_r
+    n11 = int(round(n_r * mu_r)); n10 = n_r - n11  # (R=1,W=1),(R=1,W=0)
+    n01 = int(round(n_a * mu_a)); n00 = n_a - n01  # (R=0,W=1),(R=0,W=0)
+    tau_r, tau_w = norm.ppf(1 - r), norm.ppf(1 - mu)
+
+    def neg_ll(rho: float) -> float:
+        rv = multivariate_normal(mean=[0, 0], cov=[[1, rho], [rho, 1]])
+        p11 = 1 - norm.cdf(tau_r) - norm.cdf(tau_w) + rv.cdf([tau_r, tau_w])
+        p10, p01, p00 = r - p11, mu - p11, 1 - r - mu + p11
+        eps = 1e-12
+        p11, p10, p01, p00 = [min(1 - eps, max(eps, p)) for p in (p11, p10, p01, p00)]
+        return -(n11 * log(p11) + n10 * log(p10) + n01 * log(p01) + n00 * log(p00))
+
+    rho = minimize_scalar(neg_ll, bounds=(-0.999, 0.999), method="bounded").x
+    return 6 / np.pi * np.arcsin(rho / 2)
+\end{lstlisting}
+\end{minipage}
+\caption{Minimal Python implementation of the Refusal Index estimator using maximum likelihood to fit the tetrachoric correlation implied by two-pass evaluation statistics.}
+\label{fig:ri_implementation_code}
+\end{figure}
+
+The function takes three key parameters: \texttt{acc1} (accuracy on attempted questions in the first pass), \texttt{r} (refusal rate), and \texttt{acc2} (accuracy under forced answering in the second pass). The optional parameter \texttt{n} represents the total number of questions for statistical estimation. The implementation follows the mathematical framework described in Section~\ref{sec:refusal_index_method}, using maximum likelihood estimation to find the tetrachoric correlation coefficient that best explains the observed two-pass evaluation results.
+
+\section{Ranking Stability Metrics}
+\label{app:ranking_metrics}
+
+We use two complementary metrics to evaluate the stability of model rankings across different evaluation settings: Kendall's W and Winner Entropy. These metrics capture different aspects of ranking consistency and are used in Table~\ref{tab:ranking_stability} to assess how reliably different factuality metrics rank models.
+
+\subsection{Kendall's W (Coefficient of Concordance)}
+
+Kendall's W measures the overall agreement among multiple rankings of the same set of items. It quantifies how consistently different evaluation settings (e.g., different refusal rates or benchmarks) rank the models.
+
+Given $m$ evaluation settings ranking $n$ models, let $R_{ij}$ be the rank of model $i$ in evaluation setting $j$. The sum of ranks for model $i$ across all settings is:
+\[
+R_i = \sum_{j=1}^{m} R_{ij}
+\]
+
+Kendall's W is defined as:
+\[
+W = \frac{12 \sum_{i=1}^{n} (R_i - \bar{R})^2}{m^2(n^3 - n)}.
+\]
+where $\bar{R} = \frac{m(n+1)}{2}$ is the mean of the $R_i$ values.
+
+Kendall's W ranges from 0 to 1, where:
+\begin{itemize}
+    \item $W = 1$ indicates perfect agreement among all rankings
+    \item $W = 0$ indicates no agreement (rankings are essentially random)
+    \item Higher values indicate stronger ranking consistency across evaluation settings
+\end{itemize}
+
+In our evaluation, higher Kendall's W values indicate that a metric produces more stable model rankings regardless of the specific evaluation conditions (e.g., different refusal prompts or datasets).
+
+\subsection{Winner Entropy}
+
+Winner Entropy measures the consistency of identifying the top-performing model across different evaluation settings. While Kendall's W considers the entire ranking, Winner Entropy focuses specifically on which model ranks first.
+
+Let $p_i$ be the proportion of evaluation settings where model $i$ ranks first. Winner Entropy is defined as:
+\[
+H_{\text{winner}} = -\sum_{i=1}^{n} p_i \log_n(p_i).
+\]
+where we use base-$n$ logarithm to normalize the entropy to the range $[0, 1]$.
+
+Winner Entropy interpretation:
+\begin{itemize}
+    \item $H_{\text{winner}} = 0$ indicates perfect consistency (same model always ranks first)
+    \item $H_{\text{winner}} = 1$ indicates maximum inconsistency (all models equally likely to rank first)
+    \item Lower values indicate more consistent identification of the best model
+\end{itemize}
+
+This metric is particularly important for practical applications where identifying the single best model is the primary concern, rather than the complete ranking.
+
+\subsection{Application in Our Analysis}
+
+In Table~\ref{tab:ranking_stability}, we apply these metrics to evaluate how different factuality metrics rank models across 8 evaluation settings (4 refusal-varying evaluations on SimpleQA plus 4 hallucination benchmarks). To isolate the ranking stability attributable to accuracy-refusal trade-offs rather than simple accuracy or refusal rate differences, we remove monotonic effects using isotonic regression before computing these metrics. This ensures we measure genuine stability in how metrics capture knowledge-aware refusal rather than stability derived from consistent accuracy or refusal patterns.
+
+\subsection{Isotonic Regression Procedure}
+
+To isolate the components of factuality metrics that cannot be explained by correct answer rate or refusal rate alone, we employ isotonic regression to remove monotonic effects from these baseline metrics. This procedure allows us to focus on how well each metric captures the intrinsic accuracy-refusal trade-off relationship.
+
+\noindent\textbf{Individual Metric Regression}
+For each model $i$ and factuality metric $M$, we have metric values $M_i^{(1)}, M_i^{(2)}, \ldots, M_i^{(k)}$ across $k$ evaluation settings. Similarly, we have corresponding correct answer rates $C_i^{(1)}, C_i^{(2)}, \ldots, C_i^{(k)}$ and refusal rates $R_i^{(1)}, R_i^{(2)}, \ldots, R_i^{(k)}$ for the same model across these settings.
+
+To remove the monotonic effect of correct answer rate, we perform isotonic regression to find the isotonic function $f_C$ that minimizes:
+\[
+\sum_{j=1}^{k} (M_i^{(j)} - f_C(C_i^{(j)}))^2
+\]
+subject to the constraint that $f_C$ is non-decreasing (or non-increasing, depending on the expected monotonic relationship). The residual metric values after removing correct answer rate effects are:
+\[
+M_i^{(j), -C} = M_i^{(j)} - f_C(C_i^{(j)})
+\]
+
+Similarly, to remove refusal rate effects, we find isotonic function $f_R$ and compute:
+\[
+M_i^{(j), -R} = M_i^{(j)} - f_R(R_i^{(j)})
+\]
+
+\noindent\textbf{Additive Isotonic Regression}
+To remove both correct answer rate and refusal rate effects simultaneously, we employ additive isotonic regression. This approach models the metric as the sum of monotonic functions of both variables plus a residual term:
+\[
+M_i^{(j)} = g_C(C_i^{(j)}) + g_R(R_i^{(j)}) + \epsilon_i^{(j)}
+\]
+
+We find isotonic functions $g_C$ and $g_R$ that minimize:
+\[
+\sum_{j=1}^{k} (M_i^{(j)} - g_C(C_i^{(j)}) - g_R(R_i^{(j)}))^2
+\]
+subject to monotonicity constraints on both $g_C$ and $g_R$. This optimization is performed using coordinate descent, alternately optimizing $g_C$ while holding $g_R$ fixed, and vice versa, until convergence.
+
+The residual metric values after removing both effects are:
+\[
+M_i^{(j), -\text{Both}} = M_i^{(j)} - g_C(C_i^{(j)}) - g_R(R_i^{(j)})
+\]
+
+These residuals represent the portion of each metric that cannot be explained by monotonic relationships with correct answer rate or refusal rate, allowing us to assess the intrinsic stability of how each metric captures knowledge-aware refusal properties. The ranking stability metrics (Kendall's W and Winner Entropy) are then computed on these residuals across all models and evaluation settings.
+
+
+\section{Comparison with External Calibration Methods}
+\label{app:external-calibration}
+
+Section~\ref{sec:bg} argues that external confidence calibrators---such as linear probes, auxiliary models, or sampling-based confidence---do not necessarily reflect the refusal decisions that a model actually makes. Here we provide a small ablation on Qwen3-32B to compare three representative confidence estimators on the same mixed factual QA set and relate them to the Refusal Index (RI).
+
+\paragraph{Experimental setup.}
+We use the 2k-item \textsc{mix-P(true)} split with \textsc{COMBINED\_A} prompts for white-box probing and \textsc{COMBINED\_E} prompts for refusal-based methods.
+\textbf{$P(\mathrm{IK})$} is a linear probe that predicts ``model knows the answer'' from Qwen3-32B hidden states~\citep{kadavath2022mostlyknow}. We train a single logistic head on input-only representations from \textsc{COMBINED\_A}, using a 50/50 train--test split, 100 epochs, and learning rate $10^{-3}$. 
+\textbf{APRICOT} is an accurate black-box confidence estimator that trains on generated ``think'' traces~\citep{ulmer2024apricot}. We cluster 1k think samples (MPNet embeddings, PCA to 100 dimensions, 20 $k$-means clusters) and then fine-tune DeBERTa-v3-base on a 500/100/400 train/validation/test split (3 epochs, learning rate $5\times 10^{-5}$, weight decay 0.01), followed by 10-bin reliability analysis.
+\textbf{$P(\mathrm{Answering})$} is the sampling-based refusal-frequency estimator from SimpleQA~\citep{wei2024simpleqa}: for each question we sample 40 outputs with temperature 1.0 (base model temperature 0.7) under the \textsc{COMBINED\_E} refusal prompt, treat non-refusals as answers, and grade their correctness with Qwen3-32B to obtain an empirical answer probability. All three methods are evaluated on the same held-out questions using 10-bin reliability diagrams and AUROC.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/ece_auroc_comparison.pdf}
+    \caption{\textbf{Calibration comparison on Qwen3-32B.}
+    Reliability diagrams (left, 10 bins, lower ECE is better) and ROC curves (right, higher AUROC is better) for three confidence estimation methods: a white-box linear probe $P(\mathrm{IK})$~\citep{kadavath2022mostlyknow}, APRICOT~\citep{ulmer2024apricot}, and sampling-based $P(\mathrm{Answering})$~\citep{wei2024simpleqa}.}
+    \label{fig:ece-comparison}
+\end{figure}
+
+\paragraph{Observations.}
+Figure~\ref{fig:ece-comparison} shows that the three estimators agree on ranking (ROC curves with AUROC $>0.91$), but disagree strongly on calibration shape.
+The linear probe and APRICOT both appear almost perfectly calibrated (ECE $0.098$ and $0.039$) and would suggest that Qwen3-32B is very well calibrated.
+In contrast, $P(\mathrm{Answering})$ exhibits a noticeably higher ECE ($0.122$) and a reliability curve that drops below the diagonal at high predicted probabilities, revealing a clear over-confidence bias in the high-confidence regime. This diagnosis matches the moderate RI of Qwen3-32B on SimpleQA ($\mathrm{RI}\approx 0.34$; see Table~\ref{tab:simpleqa_model_comparison}), which indicates substantial room for improving knowledge-aware refusal.
+
+Taken together with prior work showing that verbalized confidence, sampling-based confidence, and auxiliary calibrators can give inconsistent answers about the same model~\citep{wei2024simpleqa,huang2024rankcalibration}, these results highlight two points: (1) different external calibrators can hide or expose over-confidence depending on how they are constructed, and (2) the sampling-based method that directly uses refusal frequency is the only one whose calibration profile aligns with RI, but it is substantially more expensive to compute. RI therefore provides a cheaper, calibrator-free way to capture the same over-confidence behaviour, using only two standard evaluation passes without additional probes, auxiliary models, or heavy sampling.
+
+
+
+\section{LLMs Usage Statement}
+
+During the preparation of this paper, we used LLMs (e.g., ChatGPT) for limited assistance with: (1) proofreading and suggesting edits for grammar issues; (2) formatting LaTeX tables from raw data; (3) generating boilerplate code for dataset loading, logging, and plotting; and (4) identifying relevant prior work during literature review. \textbf{LLMs were not used for generating paper content, developing ideas or experimental designs, or implementing core evaluation code beyond standard auto-completion. All research contributions, experimental results, and written content are the authors' original work.}

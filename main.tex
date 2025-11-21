@@ -1,0 +1,1376 @@
+\documentclass{article} % For LaTeX2e
+\PassOptionsToPackage{table}{xcolor}  % Pass table option to xcolor before it's loaded
+\usepackage{iclr2026_conference,times}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsfonts}  % Enhanced math support
+\usepackage{booktabs}                   % Better tables
+\usepackage{multirow}                   % Multi-row cells in tables
+\usepackage{tabularx}                   % Tables with adjustable columns
+\usepackage{xcolor}                     % Color support
+\usepackage{microtype}                  % Better typography
+\usepackage{subcaption}                 % Subfigures and subcaptions
+\usepackage{algorithm2e}                % Algorithm formatting
+\usepackage{tikz}                       % Drawing and diagrams
+\usepackage{wrapfig}                    % Wrap text around figures
+\usepackage{makecell}                   % Cell formatting with line breaks
+\usepackage{varwidth}                   % Variable width boxes for tcolorbox
+\usepackage{enumitem}                   % Custom list formatting
+\usepackage[normalem]{ulem}             % Underlines and wavy underlines
+\makeatletter
+\@ifundefined{todo}{}{\let\todo\relax}
+\makeatother
+\usepackage[backgroundcolor=green!40]{todonotes}                % TODO notes in the margin
+\setlength{\marginparwidth}{3cm}
+
+
+% Optional math commands from https://github.com/goodfeli/dlbook_notation.
+\input{math_commands.tex}
+
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{cleveref}                   % Better cross-referencing (must be after hyperref)
+\usepackage{listings}                   % Code/prompt listings in boxes
+\lstset{basicstyle=\ttfamily\small, frame=single, breaklines=true, columns=fullflexible, literate={<}{{\textless}}1 {>}{{\textgreater}}1}
+
+% Define theorem-like environments
+\usepackage{amsthm}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+
+\definecolor{remarkbg}{rgb}{0.95,1,0.95}
+\definecolor{remarkborder}{gray}{0.15}
+\colorlet{remarktitlebg}{remarkbg!20!black}
+\usepackage[most]{tcolorbox}
+\newenvironment{remark}[1][]{%
+  \begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=remarkbg,          % 背景色
+    colframe=remarkborder,     % 边框颜色
+    boxrule=1pt,            % 边框线宽：0.5pt * 1.5
+    arc=4pt,
+    left=6pt,
+    right=6pt,
+    bottom=6pt,
+    top=4pt,                  % 给标题标签留出顶部空间
+    title={#1},
+    fonttitle=\bfseries,
+    coltitle=white,
+    varwidth boxed title*=-2mm,
+    boxed title style={
+      colback=remarktitlebg,   % 标题底色：超深蓝
+      colframe=remarkborder,
+      boxrule=0.75pt,
+      arc=2pt
+    },
+    attach boxed title to top left={
+      xshift=6pt,
+      yshift*=-\tcboxedtitleheight/2
+    }
+  ]
+  \small\itshape
+}{%
+  \end{tcolorbox}
+}
+
+\title{Can LLMs Refuse Questions They Do Not Know? Measuring Knowledge-Aware Refusal in Factual Tasks}
+
+% Authors must not appear in the submitted version. They should be hidden
+% as long as the \iclrfinalcopy macro remains commented out below.
+% Non-anonymous submissions will be rejected without review.
+
+\author{%
+\textbf{Wenbo Pan}$^{1}$ \quad \textbf{Jie Xu}$^{1}$ \quad \textbf{Qiguang Chen}$^{2}$ \quad \textbf{Junhao Dong}$^{3}$ \\
+\textbf{Libo Qin}$^{4}$ \quad \textbf{Xinfeng Li}$^{3}$\thanks{Corresponding author: Xinfeng Li (\texttt{lxfmakeit@gmail.com})} \quad \textbf{Haining Yu}$^{2}$ \quad \textbf{Xiaohua Jia}$^{1}$ \\
+$^{1}$Department of Computer Science, City University of Hong Kong, Hong Kong SAR, China \\
+$^{2}$Harbin Institute of Technology, Harbin, China \\
+$^{3}$College of Computing and Data Science, Nanyang Technological University, Singapore \\
+$^{4}$School of Computer Science and Engineering, Central South University, Changsha, China
+}
+
+
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+\newcommand{\cm}[1]{\textcolor{red}{#1}}
+% \newcommand{\cm}[1]{}
+\newcommand{\bt}[1]{\textcolor{blue}{#1}}
+\newcommand{\wigglyblue}[1]{\textcolor{blue}{#1}}
+
+\raggedbottom
+
+% \iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+% \preprintcopy % Use this for preprint (camera-ready format without conference header)
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+Large Language Models (LLMs) should refuse to answer questions beyond their knowledge.
+This capability, which we term \emph{knowledge-aware refusal}, is crucial for factual reliability, while existing metrics fail to faithfully measure this ability.
+In this work, we propose the \emph{Refusal Index (RI)}, a principled metric that measures how accurately LLMs refuse questions they do not know.
+We define RI as Spearman's rank correlation between refusal probability and error probability.
+To make RI practically measurable, we design a lightweight two-pass evaluation method that efficiently estimates RI from observed refusal rates across two standard evaluation runs.
+Extensive experiments across 16 models and 5 datasets demonstrate that RI accurately quantifies a model's knowledge-aware refusal capability in factual tasks.
+\todo[color=orange!40]{Zb1L - W3}
+Notably, RI remains stable across different refusal rates and provides consistent model rankings independent of a model's overall accuracy and refusal rates.
+More importantly, RI provides insight into an important but previously overlooked aspect of LLM factuality: while LLMs achieve high accuracy on factual tasks, their refusal behavior can be unreliable and fragile.
+This finding highlights the need to complement traditional accuracy metrics with the Refusal Index for comprehensive factuality evaluation.
+
+\end{abstract}
+
+\vspace{-0.7em}
+\section{Introduction}
+\vspace{-0.7em}
+\label{sec:intro}
+
+Large Language Models (LLMs) are increasingly used for knowledge-intensive factual tasks, such as long-term reasoning~\citep{chen2025reasoningerasurveylong} and specialized expert domains~\citep{wang2025capabilitiesgpt5multimodalmedical,gu2024legalagentbench,mahdavi2025brains}. 
+Despite these capabilities, LLMs are often poorly calibrated, frequently providing incorrect answers with high confidence~\citep{Huang_2025}. 
+An intuitive solution is to enable models to refuse questions beyond their knowledge~\citep{yin2023large}. 
+Recent work has explored and strengthened this ability by inducing more accurate refusals with prompting~\citep{cheng2024aiassistantsknowdont, kadavathLanguageModelsMostly2022} or fine-tuning~\citep{zhang2024rtuninginstructinglargelanguage, kapoor2024large}. 
+This capability is important for making models more reliable when answering factual questions.
+
+In this paper, we formalize this ability, an LLM's ability to refuse factual questions it does not know, as \emph{knowledge-aware refusal}.
+A truly knowledge-aware refusal assesses a model's judgment in two ways: how well a model refuses questions beyond its knowledge (avoiding \emph{overconfidence}) and how well it avoids refusing questions it would answer correctly (avoiding \emph{over-refusal}). 
+Traditional factuality metrics fail to capture this property accurately, leaving knowledge-aware refusal insufficiently measured.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{Figures/RefusalIndex-Illustration.pdf}
+    \vspace{-1em}
+    \caption{Illustration of Refusal Index (RI). Refusal Index quantifies a model's  internal capability to refuse questions beyond its knowledge by measuring the correlation between refusal decisions and answer incorrectness. Left: Refusal Index models how the correct answer rate drops with increasing refusal rate. Right: Empirical correct answer rates for the same model at different refusal rates align with the Refusal Index. \wigglyblue{We further discuss the intuition behind these curves and their implications for knowledge-aware refusal in the Discussion section (\Secref{sec:discussion}).}}%
+    \label{fig:refusal_index_illustration}
+    \vspace{-1.5em}
+\end{figure}
+
+We propose a metric called the \emph{Refusal Index (RI)} to measure knowledge-aware refusal in factual tasks, which features two key properties:
+% \todo{Hello, this is a test of the todonotes package.}%todonotesstyle
+\textbf{(1) accurate estimates of knowledge-aware refusal}: We formally define the Refusal Index as the Spearman correlation between refusal probabilities and error probabilities (\Secref{sec:refusal_index_method}). 
+This definition is independent of refusal rate and directly targets refusal behavior, making it an unbiased measure. 
+\textbf{(2) lightweight evaluation procedure}: 
+Unlike previous calibration metrics that require expensive calibration processes, we only need two standard evaluation passes to compute RI, which is compatible with existing evaluation pipelines.
+Specifically, we first evaluate a model on a factual question-answering dataset, collecting correct answer rates and refusal rates. 
+Then, we run a second evaluation pass to regenerate answers for refused questions. 
+Finally, we compute RI using the correct answer rates and refusal rates from both evaluation passes.
+
+We perform extensive experiments and analyses to validate RI across 16 models on 5 datasets. 
+\todo[color=yellow!40]{hVoC - W1}
+We demonstrate that RI quantifies models' capability to refuse questions they do not know. 
+As shown in \Figref{fig:refusal_index_illustration}, RI parameterizes the relationship between correct answer rates and refusal rates through an accuracy-refusal curve, whose convexity captures a model's ability to minimize false refusals.
+This analytical model is supported by the empirical results, with consistent RI scores on the same model at different refusal rates, which align with the accuracy-refusal curve.
+We also discover that RI has high agreement with established calibration metrics and provides consistent model rankings independent of a model's correctness and refusal rates. 
+
+Beyond RI's efficacy in capturing knowledge-aware refusal, we leverage it to reveal a critical gap in current factuality evaluation: the disconnect between factual accuracy and knowledge-aware refusal capabilities. Our analysis reveals three key insights that traditional metrics overlook:
+\textbf{(1) RI identifies persistent capability gaps.} While LLMs achieve high accuracy on factual tasks, their refusal behavior is unreliable. This gap remains stable across different prompting strategies and cannot be resolved by simply improving accuracy or adjusting refusal rates;
+\textbf{(2) Training data and pipelines influence refusal behavior.} The model family emerges as the strongest predictor of knowledge-aware refusal ability, with certain families consistently outperforming others regardless of model scale; and
+\textbf{(3) Knowledge-aware refusal is sensitive to noisy context.} Models exhibit significantly degraded refusal performance when ground truth information is unavailable in the provided context, suggesting over-reliance on contextual cues.
+These findings demonstrate that RI captures an essential dimension of model reliability absent from existing factuality metrics, highlighting the need to incorporate knowledge-aware refusal measures for a more comprehensive factuality evaluation.
+
+\vspace{-0.7em}
+\section{\wigglyblue{Background}}
+\vspace{-0.7em}
+\label{sec:bg}
+
+\noindent\wigglyblue{\textbf{Knowledge-Aware Refusal.} 
+Knowledge-aware refusal measures whether a model can appropriately decline to answer questions it doesn't know.
+When we define ``knowing'' as the ability to provide correct answers, knowledge-aware refusal capability can be quantified by the alignment between a model's refusal decisions and its answer incorrectness.
+\todo[color=orange!40]{Zb1L - W1}
+Specifically, a model good at knowledge-aware refusal shows low refusal rates for questions it can answer correctly, while showing high refusal rates for questions it cannot answer accurately.
+This knowledge-aware refusal ability is fundamental for reliable deployment of LLMs in factual tasks. 
+Previous works have explored to evaluate this capability~\citep{cheng2024aiassistantsknowdont, kapoor2024large}. 
+Among existing approaches, two types of metrics, refusal-rate-based and calibration-based metrics, have been employed to measure knowledge-aware refusal. 
+However, both exhibit distinct limitations in accurately assessing this ability.}
+
+\vspace{-0.5em}
+\begin{table}[thbp]
+    \centering
+    \footnotesize
+    \caption{\wigglyblue{Baseline factuality metrics used for comparison. $c$ and $r$ denote correct answer rate and refusal rate, respectively.}}
+    \vspace{-0.5em}
+    \begin{tabularx}{\textwidth}{l l l}
+        \toprule
+        \wigglyblue{\textbf{Metric}} & \wigglyblue{\textbf{Formula}} & \wigglyblue{\textbf{Definition}} \\
+        \midrule
+        \wigglyblue{Correct Answer Rate} & \wigglyblue{$c$} & \wigglyblue{Proportion of correct answers} \\
+        \wigglyblue{Refusal Rate} & \wigglyblue{$r$} & \wigglyblue{Proportion of refusal answers} \\
+        \wigglyblue{Correct given Attempted (C/A)} & \wigglyblue{$c/(1 - r)$} & \wigglyblue{Correct answer rate among answered questions} \\
+        \wigglyblue{F-score} & \wigglyblue{$2c/(2 - r)$} & \wigglyblue{Harmonic mean of Correct Answer Rate and C/A} \\
+        \wigglyblue{Weighted Score} & \wigglyblue{$c - p(1-r)$} & \wigglyblue{Weighted difference of $c$ and $r$} \\
+        \midrule
+        \wigglyblue{Refusal Index} & \wigglyblue{Eq. (\ref{eq:ri-estimation})} & \wigglyblue{Correlation between refusal and answer incorrectness} \\
+        \bottomrule
+    \end{tabularx}
+    \label{tab:baseline_metrics}
+    \vspace{-0.5em}
+\end{table}
+
+
+\noindent\wigglyblue{\textbf{Limitations of Refusal-Rate-Based Metrics.} 
+Refusal rate alone only measures the frequency of refusals, without capturing the correlation between refusal and answer correctness.
+For instance, one can prompt an LLM to be more cautious, thereby increasing the refusal rate without actually improving the model's knowledge-aware refusal ability.
+To address this limitation, recent works have combined refusal rates with correct answer rates for evaluation.
+The underlying intuition is that if a model refuses more samples while maintaining its correct answer rate, it demonstrates a stronger ability to identify uncertain questions.
+For example, SimpleQA~\citep{wei2024measuringshortformfactualitylarge} employs an F1 score between the correct answer rate within answered questions and the refusal rate to balance over-refusal and over-confidence. 
+We list these combined metrics in Table~\ref{tab:baseline_metrics}.
+However, such combinations of refusal rates and correct answer rates are heuristics designed to penalize over-refusal, which fail to capture the fundamental correlation between refusal and incorrectness. 
+As our experiments demonstrate in \Secref{sec:refusal_index_validation}, these metrics do not measure a consistent underlying ability: when prompting models to increase or decrease their refusal rates, these metric values fluctuate significantly (e.g. F1 score used in SimpleQA varies by up to 70\%)}\todo[color=green!40]{y9ka - W1}\todo[color=green!40]{y9ka - Q7}
+
+\noindent\wigglyblue{\textbf{Limitations of Calibration-Based Metrics.} 
+Other works employ calibration methods, which first estimate the uncertainty (or conversely, confidence score) of model outputs, then compute the correlation between confidence scores and answer correctness.
+Metrics such as Expected Calibration Error (ECE) and AUROC are commonly used to quantify this relationship.
+To apply calibration methods, previous works have designed various approaches to estimate the uncertainty of model outputs. 
+For example, some methods~\citep{xiong2023can} instruct models to assign verbalized confidence scores to their own outputs, while others~\citep{ulmer-etal-2024-calibrating} train auxiliary models to predict confidence from text outputs. 
+A more faithful approach involves repeatedly sampling multiple outputs for a single question and using the frequency of refusal answers as an uncertainty measure.
+However, the confidence scores derived from these methods cannot fully represent a model's refusal probability. 
+First, studies eliciting verbalized confidence report systematic overconfidence and high ECE, while asking the same model to vote across samples (e.g., SimpleQA) yields frequency-based curves much closer to the diagonal for larger models~\citep{xiong2023can,wei2024measuringshortformfactualitylarge}. 
+Second, auxiliary calibrators such as APRICOT or rank-calibration frameworks can produce near-perfect ECE/AUROC~\citep{ulmer-etal-2024-calibrating,huang-etal-2024-rank}, yet these numbers mainly reflect the auxiliary predictor or ranking procedure rather than the base model's refusal behavior. 
+Third, white-box confidence proxies like P(True) can even appear well calibrated on multiple-choice settings~\citep{kadavath2022mostly}, further showing that calibration verdicts swing with the chosen estimator. 
+Therefore, while these methods provide valuable insights into calibration properties within LLMs, their uncertainty estimates do not directly reflect model refusal probability. 
+In real-world applications, we expect models to abstain from providing uncertain answers. 
+Thus, measuring the correlation between refusal behavior and incorrectness in black-box settings remains an unsolved yet crucial challenge for assessing the factual reliability of language models. Appendix~\ref{app:external-calibration} provides an empirical comparison of three representative calibrators ($P(\mathrm{IK})$, APRICOT, and $P(\mathrm{Answering})$) on Qwen3-32B, showing that they disagree and that only the sampling-based method exposes the over-confidence captured by RI.}\todo[color=orange!40]{Zb1L - W2/Q1}\todo[color=green!40]{y9ka - W2/W5}
+
+\begin{remark}[Properties of Effective Measurement]
+\wigglyblue{We identify three key properties that an effective metric for knowledge-aware refusal should satisfy:}
+\begin{enumerate}[leftmargin=*]
+    \item \wigglyblue{\textbf{Faithful:} Accurately quantify knowledge-aware refusal capability.}
+    \item \wigglyblue{\textbf{Consistent:} Remain stable across different refusal rates induced by varying prompts or instructions.}
+    \item \wigglyblue{\textbf{Direct:} Derive directly from black-box LLM refusal decisions, without relying on auxiliary models.}
+\end{enumerate} 
+\end{remark}
+\todo[color=orange!40]{Zb1L - W3}
+
+\vspace{-0.7em}
+\section{Refusal Index}
+\vspace{-0.7em}
+\label{sec:refusal_index_method}
+
+% We begin by defining the scope and objective of our research. When evaluating calibration, we want to measure whether, higher confidence in model answers leads to a higher accuracy. More precisely, whether the model's output probability aligns with the actual probability of being correct. However, evaluating either probability or correctness for arbitrary text outputs remains an open problem, as ground truth can be subjective, non-deterministic, or unavailable.
+
+% \noindent\textbf{Problem.}
+% Measuring an LLM's ability to refuse questions beyond its knowledge presents several challenges.
+% On the one hand, refusal decisions are not solely determined by a model's self-knowledge. 
+% Instead, model preferences, question risk levels, or explicit instructions can influence these decisions. 
+% Consequently, these factors preclude simply counting refusal rates to evaluate knowledge-aware refusal. 
+% For example, a model designed with a higher refusal tendency will easily achieve a higher score when measured with refusal rate on unanswerable questions, regardless of its actual knowledge.
+% On the other hand, we cannot rely on external calibrators like verbalized confidence~\citep{xiong2023can} or linear probe to replace direct refusal measurements, because these calibrators may not accurately reflect a model's internal self-knowledge about when to refuse.
+% Therefore, an effective metric for knowledge-aware refusal must: (1) quantify knowledge-aware refusal accurately, (2) remain consistent across different refusal rates, and (3) derive directly from black-box LLM outputs.
+
+\noindent\textbf{Scope.} 
+Our evaluation settings follow widely used factuality evaluations like SimpleQA and TruthfulQA~\citep{wei2024measuringshortformfactualitylarge, lin2022truthfulqameasuringmodelsmimic}, where models provide atomic answers for short-form, factual questions. 
+Additionally, models can refuse to answer to avoid hallucination by producing outputs such as \emph{``I don't have enough information...''}.
+Following SimpleQA, each model answer is classified as correct, incorrect, or refused by comparing it against the ground truth. 
+The classification results are used to estimate the model's factuality level, or in our case, the ability to make knowledge-aware refusals.
+This formulation avoids subjective grading and partial correctness in LLM generation, allowing more reliable measurement.
+
+\noindent\textbf{Notations.}
+Formally, we denote the LLM as $f_{\text{LM}}: \mathcal{X} \rightarrow \mathcal{Y} \cup \{\bot\}$, where $x \in \mathcal{X}$ represents the input question, $y \in \mathcal{Y}$ represents the output answer, and $\bot$ denotes refusal. 
+For the $i$-th question $x_i$ with ground truth $y_i$ in dataset $D$, we define two indicators: $W_i = \mathbf{1}\{f_{\text{LM}}(x_i) \neq y_i\}$ for incorrect outputs \wigglyblue{(including refusals)}\todo[color=green!40]{y9ka - W3} and $R_i = \mathbf{1}\{f_{\text{LM}}(x_i) = \bot\}$ for refusal responses. 
+We define the error probability $w_i = P(f_{\text{LM}}(x_i) \neq y_i)$ and the refusal probability $r_i = P(f_{\text{LM}}(x_i) = \bot)$. 
+Conceptually, a model with better knowledge-aware refusal should refuse more frequently as questions become more difficult. 
+We measure this ability with the \emph{Refusal Index}. 
+Inspired by rank-based calibration metrics like AUROC~\citep{NiculescuMizil2005PredictingGP}, we define the Refusal Index as the correlation between refusal probabilities and error probabilities:
+
+\begin{definition}[Refusal Index]
+Refusal Index $\rho_S$ is defined as Spearman's rank correlation between the model's refusal probability $r_i$ and the error probability $w_i$ as follows:
+
+\vspace{-1em}
+\begin{equation}
+   \text{Refusal Index} = \rho_S  = \text{Corr}(\text{Rank}(r_i), \text{Rank}(w_i)).
+\end{equation}
+\vspace{-1.5em}
+
+\end{definition}
+
+The intuition behind the definition is that a model achieves \emph{perfect knowledge-awareness} when its refusal probability increases monotonically with error probability, making it more likely to refuse as questions become more difficult:
+
+\vspace{-1em}
+\begin{equation}
+w_i \leq w_j \iff P(f_{\text{LM}}(x_i) = \bot) \leq P(f_{\text{LM}}(x_j) = \bot).
+\label{eq:refusal_perfect_calibrated}
+\end{equation}
+\vspace{-1.5em}
+
+Note that this differs from error-based calibration metrics like Expected Calibration Error (ECE), which quantify absolute discrepancies between $r_i$ and $w_i$. 
+In contrast, our approach evaluates only the rank discrepancies between $r_i$ and $w_i$.
+We define RI as a discrimination property because it captures the fundamental aspect of knowledge-aware refusal. 
+\wigglyblue{This is because absolute discrepancy-based metrics are sensitive to changes in a model's overall refusal rate, which can significantly affect the metric value (an undesirable property).}\todo[color=orange!40]{Zb1L - Q2} 
+In contrast, discriminative metrics like RI or AUROC measure only the rank between different samples, making them more robust to changes in overall refusal rates. 
+Alternatively, it is generally easier for a model to adjust its overall refusal rate than to improve its ability to rank questions by difficulty accurately.
+Next, we introduce how to estimate the Refusal Index through a two-pass evaluation process (\Secref{sec:two_pass_evaluation}).
+
+
+\vspace{-0.5em}
+\subsection{Two-Pass Evaluation}
+\vspace{-0.5em}
+\label{sec:two_pass_evaluation}
+
+The naive way to measure RI would require the refusal probability $P(f_{\text{LM}}(x_i) = \bot)$ across questions with varying error probabilities. 
+However, in factuality evaluation, we only observe single text output from the model, making refusal probabilities inaccessible. 
+To address this issue, we propose a two-pass evaluation process to infer the Spearman correlation between refusal and error probabilities from binary observations. 
+This approach models refusal decisions by first treating refusal and correctness indicators as results of thresholding on their respective probabilities, and then modeling their joint distribution with a Gaussian copula. 
+
+
+\noindent\textbf{Formulating the Joint Distribution.} We estimate $\rho_S$ from the joint distribution of refusal and error probabilities using a Gaussian copula model with correlation $\rho$ as follows:
+
+\vspace{-1em}
+\begin{equation}
+C(u,v) = \Phi_\rho\!\big(\Phi^{-1}(u), \Phi^{-1}(v)\big).
+\end{equation}
+\vspace{-1.5em}
+
+Here, $u = F_r(r_i)$ and $v = F_e(w_i)$ are the marginal CDFs, $\Phi^{-1}$ is the standard normal quantile function, and $\Phi_\rho$ is the bivariate standard normal CDF with correlation $\rho$. 
+\wigglyblue{This Gaussian copula specifies only the dependence on $\rho$ and leaves the marginal distributions of $r_i$ and $w_i$ unrestricted.}\todo[color=purple!40]{5y9a - Q1} 
+The function $\Phi_\rho$ depends only on rank correlation, remaining independent of the marginal distributions. 
+Next, we avoid modeling $F_r$ and $F_e$ directly and instead estimate $\rho$ from $R_i$ and $W_i$ via maximum likelihood. 
+We then compute $\rho_S$ from $\rho$ using the standard conversion formula for Gaussian copulas: $\rho_S = \frac{6}{\pi}\arcsin\!\left(\frac{\rho}{2}\right)$~\citep{kendall1979advanced}. 
+\wigglyblue{Because $\rho$ determines the corresponding rank correlations of $r_i$ and $w_i$ via a monotonic transformation, we could equivalently report other rank measures such as Kendall's $\tau$ instead of $\rho_S$. We use Spearman's $\rho$ for interpretability.}\todo[color=orange!40]{Zb1L - Q4}\todo[color=purple!40]{5y9a - Q2}
+
+\begin{wrapfigure}{r}{0.5\textwidth}
+    \vspace{-1em}
+    \centering
+    \includegraphics[width=0.45\textwidth]{Figures/two-pass.pdf}
+    \caption{Illustration of two-pass evaluation process.}
+    \label{fig:two_pass_evaluation}
+    \vspace{-1.5em}
+\end{wrapfigure}
+
+Estimating $\rho$ requires observing two binary indicators for each sample: $R_i$ for refusal probability $r_i$ and $W_i$ for error probability $w_i$, \wigglyblue{while $r_i$ and $w_i$ themselves remain latent}\todo[color=purple!40]{5y9a - Q3}. 
+We achieve this through a two-pass evaluation that runs the model on the same dataset twice. 
+The first pass observes refusal decisions $R_i$, using a standard setup that allows the model to answer or refuse each question, classifying responses as correct, incorrect, or refused. 
+The second pass observes correctness $W_i$ by updating the system prompt to remove abstention options and requiring the model to answer all questions. We provide prompt details in \Secref{app:system_prompts} and an illustration in \Figref{fig:two_pass_evaluation}.
+We run the second pass only on questions refused in the first pass, collecting correctness indicators $W'_i$ for all refused questions ($R_i = 1$).
+
+\noindent\textbf{Estimating Refusal Index.} We define the aggregated correctness indicator $\hat{W}_i = R_i \cdot W'_i + (1-R_i) \cdot W_i$ as the correctness when the model provided an answer. 
+The empirical refusal rate is $r=\sum_{i=1}^{|D|} R_i/|D|$ and the error rate is $\mu = \sum_{i=1}^{|D|} \hat{W}_i/|D|$. 
+Under our model, the pair $(R,\hat{W})$ results from thresholding a bivariate standard normal vector $(Z_R,Z_W)$ with correlation $\rho$ at, \wigglyblue{matching the standard tetrachoric setup implied by the copula}.
+
+
+\vspace{-1em}
+\begin{equation}
+    \begin{aligned}
+        \tau_R=\Phi^{-1}(1-r), \qquad \tau_W=\Phi^{-1}(1-\mu).
+    \end{aligned}
+\end{equation}
+\vspace{-1.5em}
+
+Let $n_{ab}$ be the counts of $(R=a, \hat{W}=b)$ for $a,b\in\{0,1\}$. The cell probabilities are
+
+\vspace{-1em}
+\begin{equation}
+    \begin{aligned}
+    p_{11}(\rho) &= \bar\Phi_2\!\big(\tau_R,\tau_W;\rho\big) \;=\; P(Z_R>\tau_R, Z_W>\tau_W),\\
+    p_{10}(\rho) &= r - p_{11}(\rho),\qquad
+    p_{01}(\rho) \;=\; \mu - p_{11}(\rho),\\
+    p_{00}(\rho) &= 1 - r - \mu + p_{11}(\rho).
+    \end{aligned}
+\end{equation}
+\vspace{-1em}
+
+We estimate $\hat\rho$ by maximizing the multinomial log-likelihood and use $\hat\rho$ to compute $\rho_S$:
+
+\vspace{-1em}
+\begin{equation}
+    \begin{aligned}
+        \hat\rho = \argmax_{\rho \in (-1,1)} \ell(\rho), \quad \text{where} \quad \ell(\rho) = \sum_{a,b\in\{0,1\}} n_{ab} \log p_{ab}(\rho).
+        \label{eq:ri-estimation}
+    \end{aligned}
+\end{equation}
+% \vspace{-1.5em}
+
+\vspace{-0.7em}
+\section{Experiments \& Results}
+\vspace{-0.5em}
+\label{sec:experiments}
+
+% \vspace{-0.5em}
+\subsection{Experimental Setup}
+\vspace{-0.5em}
+\label{sec:experimental_setup}
+
+\noindent\textbf{Models.} We evaluate RI on 16 models across different families, sizes, and architectures to ensure comprehensive coverage. 
+Our open-source models include \emph{Gemma-3-12B}~\citep{gemma3_2025}, \emph{Qwen3-32B/235B}~\citep{qwen3_2025} in both think and no-think modes, \emph{Qwen2.5-72B-Instruct}~\citep{qwen2_5_2024}, \emph{Llama 3.1 70B} \citep{llama3_2024}, \emph{Mistral-Large-Instruct-2411}~\citep{mistral_large_2_2024}, \emph{GLM-4.5 and GLM-4.5-Air}\citep{glm45_2025} and \emph{DeepSeek-V3-0324}~\citep{deepseek_v3_2024}. 
+Our proprietary models include \emph{Claude 3.5 haiku} \citep{claude35_2024}, \emph{Claude Sonnet 4} \citep{claude4_2025}, \emph{GPT4.1} and \emph{GPT4.1 mini} \citep{gpt41_2025} and \emph{Gemini 2.5 Flash} and \emph{Gemini 2.5 Flash Lite} \citep{gemini25_2025}. 
+We use temperature=0.7 and top-p=0.95 across all models. 
+More implementation details are provided in \Secref{sec:detailed_experimental_setup}.
+
+\noindent\textbf{Datasets.} We evaluate RI on three scenarios that require model to make accurate, knowledge-aware refusals: factual question answering, extrinsic hallucination detection (hallucination from training data), and intrinsic hallucination detection (hallucination from context).
+(1) We use factual question answering to test models' ability to refuse unknown facts. 
+Specifically, we use SimpleQA \citep{wei2024measuringshortformfactualitylarge}, which contains verifiable, atomic factual questions that challenge even frontier LLMs. 
+(2) We use extrinsic hallucination detection to test whether models correctly refuse to answer when they cannot recall knowledge from training data. 
+For this scenario, we use PreciseWikiQA \citep{bangHalluLensLLMHallucination2025}, a dynamically generated question-answering dataset from Wikipedia snippets. 
+PreciseWikiQA tests whether models hallucinate information from their training data, assuming Wikipedia knowledge was included during training. 
+We follow \citet{bangHalluLensLLMHallucination2025} to generate 2000 questions for evaluation. 
+(3) We use intrinsic hallucination detection to test whether models can faithfully recall information with noisy context. 
+For this scenario, we use the 3 datasets from FaithEval \citep{ming2025faithevallanguagemodelstay}. 
+However, because the \texttt{Unanswerable} and \texttt{Inconsistency} subsets lack ground truth required for RI computation, we create a 1:1 mixed dataset of PreciseWikiQA and FaithEval to report RI.
+
+\noindent\textbf{Baseline Metrics.} We compare RI against five established metrics for measuring knowledge-aware refusal (Table~\ref{tab:baseline_metrics}): Correct Answer Rate, Refusal Rate, Correct given Attempted (C/A), F-score, and Weighted Score. 
+We pick $p=0.2$ for the Weighted Score to balance the accuracy and refusal rate. 
+We classify all model outputs into three categories following SimpleQA: (1) Correct, (2) Incorrect, or (3) Not Attempted (refusal).
+
+
+
+
+\noindent\textbf{Adjusting Refusal Rates.} We test RI's consistency by measuring how it changes when models exhibit different refusal rates. 
+To this end, we use different system prompts to instruct models to be more conservative or active in answering questions. 
+These prompts modify refusal tendencies without degrading the quality of refusal decisions, as shown in \Secref{sec:prompt_design_evaluation}.
+Specifically, we use four different system prompts to evaluate each model with varying refusal rates in the first pass, while keep one default prompt that instructs models to answer all questions in the second pass. 
+The complete system prompts are provided in \Secref{app:system_prompts}.
+
+\vspace{-0.5em}
+\subsection{Refusal Rate Stability Analysis}
+% \vspace{-0.5em}
+\label{sec:refusal_index_validation}
+
+
+\vspace{-0.5em}
+\begin{table*}[thbp]
+    \centering
+    \small
+    \caption{Score variability across different refusal rates. We run evaluation with different refusal tendencies on SimpleQA for each model. $\Delta_{\text{Metric}}$ denotes the normalized difference between most-refusal and least-refusal runs. We use $p=0.2$ for the Weighted metric. Lower is better.}
+    \vspace{-0.5em}
+    \label{tab:qwen25_simpleqa_prompt_strategies}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.12\textwidth} >{\raggedright\arraybackslash}p{0.15\textwidth} *{6}{>{\centering\arraybackslash}X}}
+        \toprule
+        \rowcolor{gray!20}
+        \textbf{Type} & \textbf{Model} & \textbf{$\Delta_{\text{Accuracy}}$} & \textbf{$\Delta_{\text{Refusal}}$} & \textbf{$\Delta_{\text{C/A}}$} & \textbf{$\Delta_{\text{F-score}}$} & \textbf{$\Delta_{\text{Weighted}}$} & \textbf{$\Delta_{\text{RI}}$} \\
+        \midrule
+        \multirow{6}{*}{\makecell{Normalized \\ Difference}} & Mistral-123B & $-0.40$ & $+0.93$ & $+0.37$ & $-0.16$ & $-0.83$ & \cellcolor{green!10}$\mathbf{+0.06}$ \\
+         & Qwen2-35B & $-0.47$ & $+0.95$ & $+0.12$ & $-0.31$ & $-0.62$ & \cellcolor{green!10}$\mathbf{-0.19}$ \\
+         & Qwen2.5-72B & $-0.84$ & $+0.43$ & $+0.50$ & $-0.60$ & $-1.32$ & \cellcolor{green!10}$\mathbf{-0.07}$ \\
+         & Qwen3-32B & $-0.96$ & $+0.54$ & $+0.48$ & $-0.71$ & $-1.42$ & \cellcolor{green!10}$\mathbf{+0.14}$ \\
+         & \wigglyblue{Gemma-3-12B} & \wigglyblue{$-1.31$} & \wigglyblue{$+2.04$} & \wigglyblue{$+0.96$} & \wigglyblue{$-0.93$} & \wigglyblue{$+1.79$} & \cellcolor{green!10}\wigglyblue{$\mathbf{+0.42}$} \\
+         & \wigglyblue{Average} & \wigglyblue{$-0.80$} & \wigglyblue{$+0.98$} & \wigglyblue{$+0.49$} & \wigglyblue{$-0.54$} & \wigglyblue{$-0.48$} & \cellcolor{green!10}\wigglyblue{$\mathbf{+0.07}$} \\
+        \midrule
+        \rowcolor{gray!20}
+         & \textbf{Model} & \textbf{$CV_{\text{Accuracy}}$} & \textbf{$CV_{\text{Refusal}}$} & \textbf{$CV_{\text{C/A}}$} & \textbf{$CV_{\text{F-score}}$} & \textbf{$CV_{\text{Weighted}}$} & \textbf{$CV_{\text{RI}}$} \\
+        \midrule
+        \multirow{6}{*}{\makecell{Coefficient of \\ Variation}} & Mistral-123B & $0.16$ & $0.35$ & $0.14$ & $0.06$ & $0.31$ & \cellcolor{green!10}$\mathbf{0.04}$ \\
+         & Qwen2-35B & $0.22$ & $0.47$ & $0.06$ & $0.14$ & $0.32$ & \cellcolor{green!10}$\mathbf{0.09}$ \\
+         & Qwen2.5-72B & $0.35$ & $0.17$ & $0.19$ & $0.26$ & $0.53$ & \cellcolor{green!10}$\mathbf{0.03}$ \\
+         & Qwen3-32B & $0.35$ & $0.19$ & $0.17$ & $0.28$ & $0.51$ & \cellcolor{green!10}$\mathbf{0.07}$ \\
+        & \wigglyblue{Gemma-3-12B} & \wigglyblue{$0.49$} & \wigglyblue{$0.76$} & \wigglyblue{$0.39$} & \wigglyblue{$0.36$} & \wigglyblue{$0.66$} & \cellcolor{green!10}\wigglyblue{$\mathbf{0.23}$} \\
+         & \wigglyblue{Average} & \wigglyblue{$0.31$} & \wigglyblue{$0.39$} & \wigglyblue{$0.19$} & \wigglyblue{$0.22$} & \wigglyblue{$0.47$} & \cellcolor{green!10}\wigglyblue{$\mathbf{0.09}$} \\
+        \bottomrule
+    \end{tabularx}
+    \vspace{-1.5em}
+\end{table*}
+\todo[color=yellow!40]{hVoC - W3}
+
+\noindent\wigglyblue{For each metric, we summarize stability across the four refusal prompts using two scale-normalized measures. The first is the normalized difference}
+\begin{equation}
+    \wigglyblue{\Delta_{\text{Metric}} = \frac{\text{Metric}_{\max} - \text{Metric}_{\min}}{\lvert \text{Metric}_{\text{mean}} \rvert},}
+\end{equation}
+\wigglyblue{which captures how far the most- and least-refusal runs deviate relative to the average level of the metric. The second is the coefficient of variation (CV)}
+\begin{equation}
+    \wigglyblue{\mathrm{CV}_{\text{Metric}} = \frac{\mathrm{std}(\text{Metric})}{\lvert \text{Metric}_{\text{mean}} \rvert},}
+\end{equation}
+\wigglyblue{which measures relative dispersion around the mean and allows us to compare variability across metrics with different scales.}
+\todo[color=yellow!40]{hVoC - Q1.1}
+
+In this section, we validate the Refusal Index across different refusal rates to analyze its stability as a metric for knowledge-aware refusal. 
+Our analysis shows two key findings: (1) the Refusal Index conceptualizes and captures intrinsic knowledge-aware refusal ability through an \emph{accuracy-refusal curve}, and (2) the two-pass evaluation returns consistent RI regardless of a model's refusal rate.
+
+\noindent\textbf{RI Measures Knowledge-aware Refusal with Accuracy-Refusal Curve.}
+An accuracy-refusal curve quantifies knowledge-aware refusal by plotting correct answer rate against refusal rate for a model on the same dataset.
+This trade-off emerges because refusing uncertain questions reduces incorrect answers but simultaneously decreases correct answer numbers due to false refusals. 
+Consequently, models face a trade-off between maintaining correct answers and avoiding incorrect ones. 
+As shown in Figure~\ref{fig:acc_rej_plot_with_contour_lines}, fixing any metric constant gives a unique iso-score curve in the accuracy–refusal plane, which describes the accuracy-refusal trade-off relationship assumed by the metric.
+
+Iso-RI curves demonstrate two key advantages over heuristic metrics. 
+First, they represent realistic accuracy–refusal trade-offs that match expected model behavior (see Figure~\ref{fig:refusal_index_illustration}, left). 
+All iso-RI curves share the same endpoints: maximum correct answers when refusal rate equals zero, and zero correct answers when refusal rate equals one. Correct answer rate continuously decreases as refusal rate increases.
+Second, RI focuses solely on curve convexity, remaining independent of maximum correct answer rates and refusal rates. 
+This design allows RI to capture how effectively a model preserves correct answers by minimizing false refusals. 
+\begin{wrapfigure}{r}{0.45\textwidth}
+    \centering
+    \vspace{-1em}
+    \includegraphics[width=0.48\textwidth]{Figures/acc_rej_plot_with_contour_lines.pdf}
+    \vspace{-2em}
+    \caption{Comparison of factuality metrics with iso-score accuracy-refusal trade-off curves. C/A, F, and W correspond to Correct / Attempted, F-score, and Weighted score, respectively. Empirical data are from Qwen2.5-72B on SimpleQA.}
+    \vspace{-1em}
+    \label{fig:acc_rej_plot_with_contour_lines}
+\end{wrapfigure}
+
+For example, when two models have identical maximum correct answer numbers, the model with higher RI will retain more correct answers at any given refusal rate. 
+The mathematical derivation of these properties is provided in \Secref{app:iso_ri_shape}.
+However, heuristic metrics fail to capture this distinction, instead imposing linear accuracy–refusal relationships at fixed scores. 
+Overall, the Refusal Index measures rank calibration in refusal decisions rather than simply rewarding higher accuracy or lower refusal rates, making it distinct from existing metrics.
+\wigglyblue{For an empirical view of these curves across multiple models and refusal prompts, \Secref{app:iso_ri_models} visualizes iso-RI contours together with observed accuracy--refusal points.}
+\todo[color=yellow!40]{hVoC - Q1.3}
+
+% \begin{figure}[t]
+%     \centering
+%     \includegraphics[width=0.95\linewidth]{Figures/simpleqa_refusal_index.pdf}
+%     \caption{Evaluation results of the Refusal Index on SimpleQA. }
+%     \label{fig:simpleqa_refusal_index}
+% \end{figure}
+
+\noindent\textbf{RI remains consistent across different refusal rates.}
+We then empirically validate RI by testing its consistency across varying refusal rates. 
+We use 4 system prompts described in \Secref{sec:experimental_setup} that progressively encourage higher refusal tendency, inducing different refusal rates when applied to the same model on the SimpleQA dataset.
+Complete results for all models on SimpleQA are provided in \Secref{sec:simpleqa_evaluation}. 
+RI demonstrates high stability across different refusal rates while heuristic metrics show substantial variation. 
+Table~\ref{tab:qwen25_simpleqa_prompt_strategies} shows that RI exhibits approximately 70\% lower variability than heuristic metrics. 
+This stability suggests that prompt-induced changes in refusal rate shift the refusal probability distribution without altering the underlying correlation between refusal probability and error probability. 
+In the \Secref{app:copula_validation}, we provide additional validation through goodness-of-fit tests for the Gaussian copula assumption.
+
+\vspace{-0.5em}
+\subsection{Alignment with Calibration Methods}
+\vspace{-0.5em}
+
+\noindent\textbf{RI is highly consistent with sampling-based calibration methods.}
+A potential concern arises because RI is defined as rank correlation between refusal probability and error probability, yet the two-pass evaluation may not faithfully capture this correlation. 
+We address this concern by comparing RI values with AUROC scores computed using P(Answering) as an uncertainty estimation method, following \citet{wei2024measuringshortformfactualitylarge}.
+Specifically, we compute P(Answering) by sampling 100 times from each question under temperature=1, then setting the prediction probability to $1 - N_\text{refusal}/N$, where $N_\text{refusal} / N$ is the ratio of refusal answers in the 100 generations. We then compute AUROC scores between P(Answering) and correctness labels.
+AUROC with P(Answering) provides a fair comparison because it shares RI's uncertainty definition, measuring only the discriminative ability of refusal as a rank-calibration metric, while P(Answering) directly estimates prediction probability for model refusals. 
+\wigglyblue{See Appendix~\ref{app:external-calibration} for a complementary reliability-diagram comparison with linear-probe and APRICOT-style calibrators, and for Table~\ref{tab:calibration_comparison}, which summarizes representative confidence-based methods and RI in terms of bias and computational cost.}
+While there exist other calibration metrics like ECE, Brier Score, and various uncertainty estimation methods, AUROC with P(Answering) serves as a good reference for validating Refusal Index.
+RI demonstrates the strongest positive correlation with AUROC at 85\%, outperforming all other evaluated metrics (\Figref{fig:comparison_auroc}). 
+This high agreement confirms that RI accurately reflects the correlation between refusal probability and error probability. 
+Additionally, RI requires much lower computational overhead than estimating P(Answering) through multiple sampling.
+\todo[color=green!40]{y9ka - W4}
+
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/comparison_auroc_panswer.pdf}
+    \vspace{-2em}
+    \caption{Correlation between factuality metrics and AUROC with P(Answering) on SimpleQA. RI shows the highest positive correlation with AUROC while being much cheaper to compute.}
+    \label{fig:comparison_auroc}
+    \vspace{-1.5em}
+\end{figure}
+
+\vspace{-0.5em}
+\subsection{Model Ranking Stability}
+\vspace{-0.5em}
+
+We examine whether RI consistently measures knowledge-aware refusal across different models and datasets by analyzing model ranking stability. 
+Ranking stability measures whether RI produces consistent model rankings across different datasets and evaluation settings. 
+Higher ranking stability indicates that a metric captures robust, discriminative model properties. 
+We calculate Kendall's $W$ (overall ranking agreement) and Winner Entropy (top-1 consistency) across 8 evaluation settings: 4 refusal-varying evaluations on SimpleQA plus 4 hallucination benchmarks. 
+Because correct answer rate and refusal rate already provide high ranking stability on their own, we need to filter out their monotonic effects to isolate ranking stability of accuracy-refusal trade-off.
+Specifically, we perform isotonic regression on correct answer rate or refusal rate across different setups for each model, then remove the regressed values from each metric. 
+These residuals represent metric components that cannot be explained by correct answer rate or refusal rate alone. We then calculate Kendall's $W$ and Winner Entropy on these residuals.
+We provide detailed procedures in \Secref{app:ranking_metrics}.
+
+\noindent\textbf{RI provides stable model rankings independent of \textcolor{green!60!black}{accuracy and refusal rate}\todo[color=green!40]{y9ka - Q8}.} 
+RI maintains high ranking stability when removing monotonic effects of correct answer rate or refusal rate, while heuristic metrics degrade to near-random stability (Table~\ref{tab:ranking_stability}). 
+Heuristic metrics like F-score and Weighted achieve strong ranking stability initially, but their Kendall's $W$ and Winner Entropy drop dramatically after removing monotonic effects from correct answer rate or refusal rate. 
+This pattern reveals that heuristic metrics derive their ranking stability primarily from correct answer rate or refusal rate rather than the relationship between them. 
+However, RI retains most of its ranking stability after removing these effects, demonstrating that it captures intrinsic knowledge-aware refusal properties that persist across different evaluation settings.
+
+
+\textsc{\textnormal{\vspace{-0.5em}
+\begin{table}[thbp]
+    \centering
+    \small
+    \caption{Ranking stability across different evaluation settings. $-\text{Correct}$ and $-\text{Refusal}$ show results after removing monotonic effects of correct answer rate and refusal rate with isotonic regression. $- \text{Both}$ removes both correctness and refusal rates with additive isotonic regression.}
+    \vspace{-0.5em}
+    \label{tab:ranking_stability}
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{lcccccccc}
+        \toprule
+        \rowcolor{gray!20}
+         & \multicolumn{4}{c}{\textbf{Kendall's W} $\uparrow$} & \multicolumn{4}{c}{\textbf{Winner Entropy} $\downarrow$} \\
+        \cmidrule(lr){2-5} \cmidrule(lr){6-9}
+        \rowcolor{gray!20}
+        \textbf{Metric} & \textbf{Default} & \textbf{$- \text{Correct}$} & \textbf{$- \text{Refusal}$} & \textbf{$- \text{Both}$} & \textbf{Default} & \textbf{$- \text{Correct}$} & \textbf{$- \text{Refusal}$} & \textbf{$- \text{Both}$} \\
+        \midrule
+        Random Value  & 0.25 & 0.25 & 0.25 & \cellcolor{green!10}0.25 & 0.61 & 0.61 & 0.61 & \cellcolor{green!10}0.61 \\
+        Correct Answer Rate & 0.87 & 0.00 & \textbf{0.48} & \cellcolor{green!10}0.39 & \textbf{0.00} & 1.00 & 0.48 & \cellcolor{green!10}1.00 \\
+        Refusal Rate & 0.86 & 0.44 & 0.00 & \cellcolor{green!10}0.30 & 0.18 & 0.61 & 1.00 & \cellcolor{green!10}1.00 \\
+        \midrule
+        C / A    & 0.69 & \textbf{0.63} & 0.40 & \cellcolor{green!10}0.37 & 0.33 & 0.61 & 0.48 & \cellcolor{green!10}0.61 \\
+        F-score  & \textbf{0.90} & 0.10 & 0.48 & \cellcolor{green!10}0.39 & 0.00 & \textbf{0.18} & 0.48 & \cellcolor{green!10}0.52 \\
+        Weighted & 0.87 & 0.60 & 0.25 & \cellcolor{green!10}0.32 & 0.33 & 0.33 & \textbf{0.37} & \cellcolor{green!10}0.61 \\
+        \rowcolor{green!10}
+        RI       & 0.47 & 0.50 & 0.35 & \textbf{0.49} & 0.47 & 0.33 & 0.61 & \textbf{0.37} \\
+        \bottomrule
+    \end{tabular}%
+    \vspace{-1.5em}
+\end{table}}}
+
+\vspace{-0.7em}
+\section{Discussion}
+\vspace{-0.7em}
+\label{sec:discussion}
+
+
+\textbf{Does prompting models to be more cautious mitigate miscalibration?} Our results show that prompting strategies have limited impact on knowledge-aware refusal capabilities. 
+LLMs are notorious for overconfidence, answering all questions by default even when they lack knowledge. 
+Instructing models to reduce confidence and refuse more questions might seem to help this problem, but our RI analysis reveals otherwise. 
+Table~\ref{tab:qwen25_simpleqa_prompt_strategies} shows that while increasing refusal rates improves the correct answer rate in answered questions (increasing C/A), RI remain stable and far from perfect. 
+This means that, even when a model's refusal rate matches its error rate (eliminating systematic bias), a significant gap persists between actual refusal decisions and perfect refusal decisions. 
+RI quantifies this gap independent of specific refusal rates, providing a stable measure across different prompting strategies.
+
+\begin{wrapfigure}{r}{0.65\textwidth}
+    \vspace{-2em}
+    \centering
+    \includegraphics[width=0.65\textwidth]{Figures/simpleqa_refusal_vs_accuracy_scatter.pdf}
+    \vspace{-1em}
+    \caption{\wigglyblue{Scatter plot of Refusal Index vs. Correct Answer Rate.}}%
+    \label{fig:simpleqa_refusal_vs_accuracy_scatter}
+    \vspace{-1em}
+\end{wrapfigure}
+\todo[color=yellow!40]{hVoC - W4/Q2}
+
+
+\noindent\textbf{What factors lead to better knowledge-aware refusal?}
+We find that model family is the strongest predictor of knowledge-aware refusal ability, surpassing traditional factors like size and accuracy. 
+We found no strong correlation between RI and model parameter sizes, accuracy, or refusal rates within our tested models. 
+\Figref{fig:simpleqa_refusal_vs_accuracy_scatter} plots the relationship between correct answer rate in SimpleQA and average RI scores, with a regression line showing the expected relationship. 
+The correct answer rate shows only $R^2=0.235$ correlation with Refusal Index, indicating that higher factual accuracy does not necessarily improve knowledge-aware refusals. 
+Notably, model family strongly predicts RI performance. 
+Claude and Qwen models (except Qwen 235B) consistently perform above the regression line, demonstrating superior knowledge-aware refusal abilities. 
+In contrast, all Gemini, GPT-4.1, and GLM-4.5 models fall below the regression line. 
+Specifically, Claude models achieve the highest RI scores across both Claude-3.5 Haiku and Claude-4 Sonnet variants. 
+These findings suggest that training pipelines and data distributions used by different model providers play a more critical role in knowledge-aware refusals than model scale or general accuracy.
+
+\begin{wraptable}{r}{0.65\textwidth}
+    \vspace{-0.5cm}
+    \centering
+    \caption{Refusal Index results on hallucination benchmarks.}
+    \label{tab:hallu_model_comparison}
+    \resizebox{\linewidth}{!}{%
+    \begin{tabular}{l c c c c}
+    \toprule
+    \rowcolor{gray!20}
+     & \multicolumn{2}{c}{\textbf{Truth Available}} & \multicolumn{2}{c}{\textbf{Truth Unavailable}} \\
+    \cmidrule(lr){2-3} \cmidrule(lr){4-5}
+    \rowcolor{gray!20}
+    & \textbf{Precise-} & \textbf{Counter-} & \textbf{Incon-} & \textbf{Unans-} \\
+    \rowcolor{gray!20}
+    \multirow{-3}{*}{\textbf{Model}} & \textbf{Wiki} & \textbf{factual} & \textbf{consistency} & \textbf{werable} \\
+    \midrule
+    Gemma-3-12b & 0.36 & 0.56 & 0.22 & 0.12 \\
+    Qwen3-32B & 0.48 & 0.60 & 0.27 & 0.24 \\
+    Qwen2.5-72B & \textbf{0.54} & 0.56 & 0.22 & 0.40 \\
+    Llama-3.1-70B & 0.52 & \textbf{0.70} & 0.17 & 0.31 \\
+    Mistral-Large & 0.50 & 0.38 & \textbf{0.34} & \textbf{0.52} \\
+    \midrule
+    Average & 0.48 & 0.56 & 0.24 & 0.32 \\
+    \bottomrule
+    \end{tabular}%
+    }
+    \vspace{-0.5em}
+\end{wraptable}
+
+
+
+\noindent\textbf{Is a model's refusal ability affected by context?} We find that ground truth availability in context significantly impacts knowledge-aware refusal performance, with models struggling most when ground truth is unavailable. 
+We expand RI evaluation to realistic settings where models generate answers conditioned on grounding context with FaithEval. 
+Table~\ref{tab:hallu_model_comparison} presents four scenarios testing different aspects of refusal ability: 
+\textbf{PreciseWiki} requires models to recall information from training data; 
+\textbf{Counterfactual} tests models' ability to avoid hallucinating from misleading context; 
+\textbf{Inconsistency} provides conflicting information requiring refusal; and 
+\textbf{Unanswerable} offers no contextual answers. 
+RI values for PreciseWiki are relatively close to those of SimpleQA, and models demonstrate strong ability to identify and avoid counterfactual context. 
+However, when ground truth becomes unavailable (Inconsistency and Unanswerable scenarios), models exhibit substantially worse knowledge-aware refusal. 
+This pattern suggests that knowledge-aware refusal relies on partial information about answers from training data or context, and models make degraded refusal decisions when answers never appear in their provided context.
+
+In summary, these findings demonstrate that RI captures an essential dimension of model reliability that is absent from existing factuality metrics. 
+While current factuality evaluation and calibration studies show promising results in improving model accuracy and calibration~\citep{kadavathLanguageModelsMostly2022}, RI reveals a different picture. 
+Our results highlight the need to incorporate knowledge-aware refusal evaluation for comprehensive factuality assessment.  
+We also provide a detailed discussion of the limitations of RI in \Secref{app:limitations_of_ri}.
+
+\vspace{-0.7em}
+\section{Related Work}
+\vspace{-0.7em}
+\label{sec:related_works}
+
+\noindent\textbf{Factuality evaluation of LLMs.}
+Factuality evaluation measures an LLM's ability to generate correct answers.
+Previous methods compare LLM responses against external sources to assess factual correctness~\citep{wei2024measuringshortformfactualitylarge, min-etal-2023-factscore, kwiatkowski-etal-2019-natural}.
+Many factuality evaluations focus on measuring hallucination, where models generate answers that contradict available information~\citep{bangHalluLensLLMHallucination2025}. Recent work in factuality evaluation recognizes that ground truth may not always be available to the model~\citep{jing2025factuality}.
+Some works improve factuality by training models to refuse questions beyond their knowledge boundaries~\citep{cao2024learn, xu2024reliability, ouyang-etal-2022-training}.
+Our metric evaluates calibration through refusal behavior rather than targeting hallucination rate directly.
+
+\noindent\textbf{Calibration evaluation on black-box models.}
+Calibration measures the alignment between a model's output probability and its actual probability of being correct~\citep{guo2017calibration}. Calibration serves as a valuable factuality metric because it quantifies a model's self-awareness of its own knowledge~\citep{kadavath2022mostly, yin-etal-2023-selfaware, agrawal2023hallucinating}. 
+Estimating calibration for black-box LLMs requires inferring uncertainty from text outputs. Previous works propose semantic similarity measures~\citep{kuhn-etal-2023-semantic, farquhar-etal-2024-semantic} or auxiliary models~\citep{ulmer-etal-2024-calibrating} to estimate uncertainty, producing error-based or rank-based calibration metrics~\citep{huang-etal-2024-rank}. These methods require training a separate calibrator for each model, making them computationally expensive and model-dependent.
+Our metric measures the correlation between uncertainty and difficulty, representing a form of rank-based calibration. Because we do not estimate uncertainty directly, our approach is lightweight.
+
+\vspace{-0.7em}
+\section{Conclusion}
+\vspace{-0.7em}
+
+We propose Refusal Index (RI), a novel metric that measures LLMs' knowledge-aware refusal ability through the correlation between refusal decisions and answer incorrectness, addressing critical limitations of existing factuality evaluation methods. 
+Our two-pass evaluation framework provides a practical and lightweight approach to measure RI, enabling more reliable model comparisons independent of accuracy or refusal rate. 
+This work opens new directions for developing better-calibrated AI systems and provides a foundation for evaluating self-knowledge in LLMs.
+
+\vspace{-0.7em}
+\section*{Ethic Statement}
+\vspace{-0.7em}
+
+This work introduces the Refusal Index to measure knowledge-aware refusal in Large Language Models. Our research uses publicly available datasets (SimpleQA, PreciseWikiQA, FaithEval) and model APIs under their respective terms of service, with all evaluations conducted on established benchmarks without introducing personally identifiable information. While our metric could theoretically inform strategies to manipulate model refusal behavior, we emphasize its intended use for safety evaluation and model development rather than adversarial exploitation. We encourage practitioners to integrate knowledge-aware refusal assessment alongside traditional accuracy metrics when deploying LLMs in factual question-answering systems, particularly in domains where incorrect information could have significant consequences.
+
+\vspace{-0.7em}
+\section*{Reproducibility Statement}
+\vspace{-0.7em}
+
+There are mainly three suites of experiments needed for reproducing all of our results in the paper: computing RI with two-pass evaluation, evaluating RI with different refusal rates, and computing baseline metrics.
+For the first RI evaluation experiment, we have detailed the model scope, decoding settings and datasets used in the \Secref{sec:experimental_setup}. We also provide full prompts in the \Secref{app:system_prompts}. 
+All models and datasets we used are publicly available on Hugging Face. 
+For computing RI, we have provided the Python code snippet for computing RI from correct answer rates and refusal rates in the \Secref{app:ri_implementation}.
+To reproduce our results of RI with different refusal rates, we have detailed the full prompts we used to induce different refusal rates in the \Secref{app:system_prompts}. 
+For computing baseline metrics, we give formulas of all baseline metrics in the table and describe the process to compute AUROC with P(answering) in the \Secref{sec:experimental_setup}.
+In summary, reproducing all of our results is relatively straightforward. 
+We additionally provide source code for running and evaluating all metrics in the supplementary materials.
+
+\bibliography{reference}
+\bibliographystyle{iclr2026_conference}
+
+\newpage
+\appendix
+
+\section*{Appendix Summary}
+This appendix provides essential background and technical details supporting our Refusal Index evaluation framework. We first discuss the limitations of our approach in \Secref{app:limitations_of_ri}, followed by complete system prompts for the two-pass evaluation methodology in \Secref{app:system_prompts}. We then present comprehensive experimental configurations in \Secref{sec:detailed_experimental_setup} and compare external calibration methods in \Secref{app:external-calibration}. The theoretical foundations are established through validation of the Gaussian copula assumption (\Secref{app:copula_validation}) and mathematical derivations of iso-RI curve properties (\Secref{app:iso_ri_shape}). Complete experimental results on SimpleQA are provided in \Secref{sec:simpleqa_evaluation}. Extended analyses include stability assessments regarding sample size (\Secref{sec:impact_of_number_of_questions}) and prompt design variations (\Secref{sec:prompt_design_evaluation}), along with a ready-to-use Python implementation of our metric (\Secref{app:ri_implementation}). We conclude with ranking stability evaluation methodology (\Secref{app:ranking_metrics}) and an LLM usage declaration.
+
+\section{Limitations of Refusal Index} 
+\label{app:limitations_of_ri}
+The Refusal Index has three key limitations that practitioners should consider. 
+First, the two-pass evaluation requires models capable of following instructions to either refuse questions or provide forced answers, limiting applicability to relatively capable models. 
+Second, our formulation targets knowledge-aware refusal specifically and may not generalize to other refusal types or other applications, such as safety-based refusals, or refusal behavior in non-factual tasks. 
+Finally, knowledge-aware refusal provides a relatively weak signal compared to metrics like correct answer rate, requiring larger datasets for stable RI scores (\Secref{sec:impact_of_number_of_questions}).
+Despite these limitations, RI offers a pragmatic metric for an important capability that previous metrics overlooked.
+
+\section{System Prompts for Two-Pass Evaluation}
+\label{app:system_prompts}
+
+We provide the complete system prompts used in our experiments to enable accurate reproduction. These prompts use consistent formatting instructions to standardize outputs. We include in-context learning examples to ensure stable model behavior and syntactically correct answers in the required format.
+
+\noindent\textbf{Second Pass System Prompt.}
+The second pass forces models to answer questions that were refused in the first pass. We combine explicit instructions with in-context examples to enforce the output format and minimize formatting errors. Most models rarely refuse when given such instructions, so we simply instruct the model to always provide an answer. The in-context examples help the model consistently produce the required XML-style tags. We show the complete second-pass system prompt in Figure~\ref{fig:second_pass_prompt}.
+
+\begin{figure}[th]
+\centering
+\begin{minipage}{\textwidth}
+\small
+\begin{lstlisting}
+Second Pass Prompt
+
+EXAMPLE 1
+INPUT: In what year did Baleka Mbete become the Deputy President of South Africa post-apartheid?
+OUTPUT: <answer>2008</answer>
+
+EXAMPLE 2
+INPUT: Who was the mayor of Kathmandu who served from 1971 to 1976?
+OUTPUT: <answer>Rajendra Man Suwal</answer>
+
+[omitted for brevity]
+
+EXAMPLE 10
+INPUT: The book "Rhine" by Anselm Kiefer is from what year?
+OUTPUT: <answer>1981</answer>
+
+Reason through the following question and provide a brief answer in <answer>...</answer> at the end. You always give an answer and you never return <answer>UNANSWERED</answer>.
+
+Question: {question}
+\end{lstlisting}
+\end{minipage}
+\caption{Second-pass system prompt used to force answers on previously refused questions. The prompt standardizes output format and includes in-context examples to minimize formatting errors.}
+\label{fig:second_pass_prompt}
+\end{figure}
+
+\noindent\textbf{First Pass System Prompt.}
+Our first-pass prompts use the same design and formatting as the second-pass prompt. However, we make small, targeted changes to the instruction wording and the mix of in-context examples to encourage appropriate refusal behavior. Figure~\ref{fig:first_pass_prompt_highest} shows one complete first-pass prompt variant. Other variants differ only in how strongly they encourage refusal and the proportion of examples that show returning \verb|<answer>UNANSWERED</answer>| when uncertain.
+
+\begin{figure}[th]
+\centering
+\begin{minipage}{\textwidth}
+\begin{lstlisting}
+First Pass Prompt -- Highest Refusal Rate
+
+EXAMPLE 1
+INPUT: In what year did Baleka Mbete become the Deputy President of South Africa post-apartheid?
+OUTPUT: <answer>UNANSWERED</answer>
+
+[omitted for brevity]
+
+EXAMPLE 10
+INPUT: The book "Rhine" by Anselm Kiefer is from what year?
+OUTPUT: <answer>UNANSWERED</answer>
+
+Reason through the following question and provide a brief answer in <answer>...</answer> at the end. You are very cautious and need good evidence before drawing conclusions. You prefer saying you don't know by returning <answer>UNANSWERED</answer> rather than risking a wrong answer.
+
+Question: {question}
+\end{lstlisting}
+\end{minipage}
+\caption{First-pass prompt variant that induces the highest refusal rate. The instruction and examples bias toward returning \texttt{UNANSWERED} when uncertain.}
+\label{fig:first_pass_prompt_highest}
+\end{figure}
+
+These first-pass variants differ from the second-pass prompt (Figure~\ref{fig:second_pass_prompt}) in only two ways: (1) how strongly the instruction encourages refusal and (2) the proportion of \verb|<answer>UNANSWERED</answer>| responses in the in-context examples. These changes control the overall refusal tendency without otherwise changing the task.
+
+\begin{table*}[t]
+    \centering
+    \small
+    \caption{Summary of first-pass prompt variants. Only the refusal instruction and the proportion of UNANSWERED responses differ across variants; all other elements match the second-pass prompt. Ratios vary by model and dataset (see \Secref{sec:simpleqa_evaluation}); we report relative levels for brevity.}
+    \label{tab:first_pass_prompt_variants}
+    \begin{tabularx}{\textwidth}{l X c}
+        \toprule
+        \textbf{Type} & \textbf{Instruction} & \textbf{UNANSWERED ratio} \\
+        \midrule
+        Low Refusal & You only give an answer if you are confident; otherwise you return $<$answer$>$UNANSWERED$<$/answer$>$. & 0 / 10 \\
+        Normal Refusal & You are cautious and may return \texttt{UNANSWERED} when unsure. & 1 / 10 \\
+        High Refusal & You make reasonable guesses from partial information but avoid speculation; return \texttt{UNANSWERED} if not very confident. & 4 / 10 \\
+        Highest Refusal & You are very cautious and prefer \texttt{UNANSWERED} rather than risking a wrong answer. & 6 / 10 \\
+        \bottomrule
+    \end{tabularx}
+\end{table*}
+
+\section{Detailed Experimental Setup}
+\label{sec:detailed_experimental_setup}
+
+This section provides comprehensive details of our experimental methodology to enable reproduction of our results.
+
+\noindent\textbf{Model inference and generation settings.}
+To ensure fair comparison across different language models, we maintained consistent decoding hyperparameters throughout our evaluation.
+Unless explicitly stated otherwise, all models used nucleus sampling with temperature = 0.7, top-p = 0.95, and a maximum generation length of 4096 tokens.
+We served all open-source models using vLLM with eight NVIDIA A800 (80 GB) GPUs, while proprietary models were accessed through their official APIs using identical decoding parameters.
+
+For Qwen3, we evaluated both ``thinking'' and ``non-thinking'' modes to assess the impact of chain-of-thought reasoning on knowledge-aware refusal.
+Qwen3 provides a soft switch mechanism: appending \texttt{/think} or \texttt{/no\_think} to the prompt controls the generation of \verb|<think>| reasoning blocks.
+Following the official Qwen documentation, we used \texttt{/no\_think} to disable thinking mode for non-thinking evaluations.
+
+\noindent\textbf{Answer classification and automatic grading.}
+Our evaluation framework classifies model responses into either correct, incorrect, or refused to enable RI computation.
+We instruct each model to generate responses with an \verb|<answer>| tag containing either a factual answer or a refusal with \verb|<answer>UNANSWERED</answer>|.
+We first detect refusals by scanning for the exact substring \verb|<answer>UNANSWERED</answer>|.
+Remaining responses are classified using the same automatic grading system as SimpleQA to ensure consistency with established benchmarks.
+We employ the same model used in SimpleQA, GPT-4o-mini with default generation settings provided by OpenAI as our automatic grader, which has demonstrated high reliability in SimpleQA evaluation.
+The grader classifies each predicted answer as \textsc{CORRECT}, \textsc{INCORRECT}, or \textsc{NOT\_ATTEMPTED} using the prompt shown in Figure~\ref{fig:llm_grader_prompt}.
+
+\begin{figure}[th]
+\centering
+\begin{minipage}{\textwidth}
+\begin{lstlisting}
+Grade the predicted answer as CORRECT (A), INCORRECT (B), or NOT_ATTEMPTED (C).
+
+Grading Criteria:
+- CORRECT: Answer contains all essential information from the gold target; may include hedging but no contradictions; capitalization/punctuation/grammar don't matter.
+- INCORRECT: Answer contradicts the gold target, even with hedging.
+- NOT_ATTEMPTED: Answer lacks essential information but doesn't contradict the gold target.
+
+Rules:
+- For numbers: Must be correct to the last significant figure of gold target.
+- Information implied by the question doesn't need repeating (e.g., "San Francisco" is correct for "What city is OpenAI in?" when gold target is "San Francisco, California").
+- Minor typos in names are acceptable.
+- Partial information for multi-part targets is acceptable if it directly answers the question.
+- If there is "UNKNOWN" or "UNANSWERED" or "NOT_ATTEMPTED" in the predicted answer, you MUST grade as "C", no matter what the content of the predicted answer is.
+
+<Begin of Question>
+{question}
+<End of Question>
+
+<Begin of Gold Target>
+{answer}
+<End of Gold Target>
+
+<Begin of Predicted Answer>
+{predicted_answer}
+<End of Predicted Answer>
+
+Return the letter "A", "B", or "C" with no other text. The grade is:
+\end{lstlisting}
+\end{minipage}
+\caption{LLM grader prompt used to classify predictions as CORRECT, INCORRECT, or NOT\_ATTEMPTED for both passes.}
+\label{fig:llm_grader_prompt}
+\end{figure}
+
+This LLM grader handles cases where models make refusals but did not return \verb|<answer>UNANSWERED</answer>|. In such cases, the grader classifies these responses as \textsc{NOT\_ATTEMPTED} based on the content of the predicted answer.
+In the second pass, we use the same LLM grader but classify \textsc{NOT\_ATTEMPTED} responses as \textsc{INCORRECT}, as we do not expect refusals in the second pass. This LLM grader is used for all three evaluation scenarios.
+
+\noindent\textbf{Benchmark datasets and evaluation scenarios.}
+Our evaluation encompasses three complementary scenarios that test different aspects of knowledge-aware refusal: factual recall, extrinsic hallucination detection, and intrinsic hallucination detection.
+This comprehensive approach ensures that RI captures refusal behavior across diverse knowledge-intensive tasks.
+
+\textbf{Factual question answering (SimpleQA):} 
+We use SimpleQA to evaluate models' ability to refuse unknown factual information.
+SimpleQA contains 4,326 carefully curated factoid questions spanning science, geography, history, and popular culture.
+Each question has a single, indisputable answer verified by two independent annotators with high inter-annotator agreement.
+This benchmark tests whether models can appropriately refuse questions about facts they may not have learned during training.
+
+\textbf{Extrinsic hallucination detection (PreciseWikiQA):}
+We evaluate models' ability to refuse when they cannot accurately recall information from their training data using PreciseWikiQA from the HalluLens benchmark suite.
+PreciseWikiQA dynamically generates short factual questions from Wikipedia snippets, assuming that Wikipedia content was included in model training.
+The evaluation protocol first assesses model refusal decisions, then classifies non-refused answers as correct, incorrect, or unverifiable using an LLM judge. We use the same LLM grader as in SimpleQA for this task.
+
+\textbf{Intrinsic hallucination detection (FaithEval):}
+We assess models' ability to refuse when provided with insufficient or contradictory context using three tasks from FaithEval.
+This benchmark evaluates knowledge-aware refusal in retrieval-augmented generation scenarios, constructed from ten diverse QA datasets (SQuAD, NewsQA, TriviaQA, NaturalQuestions, SearchQA, HotpotQA, BioASQ, DROP, RACE, and TextbookQA).
+
+The three FaithEval tasks target different contextual challenges:
+\begin{itemize}
+    \item \textbf{Unanswerable Context:} Context is modified to remove supporting evidence (2.4K examples with >98\% human-evaluator agreement on automatic checks)
+    \item \textbf{Inconsistent Context:} Multiple documents with conflicting answers are concatenated (1.5K samples)  
+    \item \textbf{Counterfactual Context:} Context supports false statements (e.g., ``water freezes at 100°C'') using multiple-choice questions (1K samples)
+\end{itemize}
+
+Together, these tasks provide 4.9K contextual QA pairs that reveal models' difficulty in maintaining faithfulness to provided context when information is incomplete or contradictory.
+
+
+\section{Validating the Gaussian Copula Assumption}
+\label{app:copula_validation}
+
+We use the bivariate normal copula (Gaussian copula) to model the joint dependence between refusal and incorrectness under forced answering. This choice allows us to estimate the Refusal Index by capturing the correlation structure between the latent refusal score and question difficulty while remaining agnostic to the marginal distributions. We must validate whether this distributional assumption is appropriate for real model behavior.
+
+We compare the Gaussian copula against three alternative copula families to determine which provides the best fit for modeling refusal behavior. We consider Student-\emph{t}, Gumbel, and Clayton copulas as alternatives, each capturing different forms of dependence structure. We evaluate which copula family best fits the observed refusal patterns across multiple models and prompts.
+
+
+\noindent\textbf{Evaluation Criteria.}
+We use two criteria to evaluate copula performance: goodness-of-fit and win-rate comparisons between the Gaussian copula and the alternatives.
+
+Since the margins are fixed by construction in our two-pass evaluation setup, the natural goodness-of-fit criterion is the multinomial log-likelihood implied by each copula through the resulting 2\,$\times$\,2 cell probabilities. Different copulas have varying numbers of parameters (e.g., Student-\emph{t} has 2 parameters while Gaussian has only 1), so we must penalize model complexity to ensure fair comparison. We complement the raw log-likelihood with the Akaike Information Criterion (AIC) and Bayesian Information Criterion (BIC):
+\begin{align}
+\text{AIC} &= 2k - 2\ell(\hat{\theta}),\\
+\text{BIC} &= k\log(n) - 2\ell(\hat{\theta}).
+\end{align}
+where $k$ is the number of parameters, $n$ is the sample size, and $\ell(\hat{\theta})$ is the maximized log-likelihood. These criteria penalize more complex dependence structures, providing a principled basis for model selection.
+
+For the second criterion, we evaluate win rates by comparing how often the Gaussian copula outperforms each alternative across different model-prompt combinations. We compare the Gaussian copula with three standard alternatives that capture different forms of dependence. A Student-\emph{t} copula adds a heavy-tail parameter to the Gaussian structure; a Clayton copula emphasizes lower-tail association and is asymmetric; and a Gumbel copula emphasizes upper-tail association and is also asymmetric. All candidates are fit by maximum likelihood with margins fixed at the empirical refusal and forced-answering error rates for each model-prompt combination. Win rates are computed across these individual model-prompt units to assess the relative performance of each copula family.
+
+\noindent\textbf{Experimental Setup.}
+We systematically evaluate and compare the maximum log-likelihood for each copula family on the SimpleQA dataset. Our evaluation covers all 16 models and 4 first-pass prompts used in the main evaluation (see \Secref{sec:simpleqa_evaluation}).
+
+For each model-prompt combination, we obtain a 2\,$\times$\,2 contingency table with margins $(r,\mu)$ representing the refusal rate and error rate respectively. Each copula $C$ maps these margins to cell probabilities $(p_{00},p_{01},p_{10},p_{11})$, and we estimate the copula parameters by maximizing the multinomial likelihood of the observed counts as defined in Equation~\ref{eq:mle}:
+\begin{align}
+\hat{\rho} &= \argmax_{\rho \in (-1,1)} \ell(\rho), \nonumber\\
+\text{where} \quad \ell(\rho) &= \sum_{a,b\in\{0,1\}} n_{ab} \log p_{ab}(\rho). \label{eq:mle}
+\end{align}
+This setup isolates the copula choice while maintaining consistency with the main evaluation framework.
+
+\begin{table*}[t]
+  \centering
+  \small
+  \caption{Copula comparison on SimpleQA across model-prompt combinations (ties counted as 0.5). Left panel reports mean goodness-of-fit metrics across all combinations for each copula family. Right panel reports the fraction of combinations where the Gaussian copula outperforms each alternative.}
+  \label{tab:copula_comparison}
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \textbf{Goodness-of-Fit Metrics}
+    \begin{tabular}{@{}lccc@{}}
+      \toprule
+      Family & Log-likelihood & AIC & BIC \\
+      \midrule
+      Gaussian & $-1832.08$ & $3666.16$ & $3671.76$ \\
+      Student-\emph{t} & $-1859.14$ & $3722.27$ & $3733.48$ \\
+      Gumbel & $-2086.86$ & $4175.72$ & $4181.32$ \\
+      Clayton & $-2200.13$ & $4402.26$ & $4407.86$ \\
+      \bottomrule
+    \end{tabular}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \textbf{Gaussian Win Rates}
+    \begin{tabular}{@{}lccc@{}}
+      \toprule
+      Versus & Log-likelihood & AIC & BIC \\
+      \midrule
+      Student-\emph{t} & $1.000$ & $1.000$ & $1.000$ \\
+      Clayton & $0.676$ & $0.647$ & $0.647$ \\
+      Gumbel & $0.632$ & $0.618$ & $0.618$ \\
+      \bottomrule
+    \end{tabular}
+  \end{minipage}
+\end{table*}
+
+The results in Table~\ref{tab:copula_comparison} show that the Gaussian copula provides the strongest average fit. After accounting for complexity, it provides the best overall trade-off between parsimony and data fit. The Student-\emph{t} copula, despite its additional heavy-tail parameter, does not improve the average log-likelihood and is uniformly worse once complexity penalties are applied. This aligns with intuition for 2\,$\times$\,2 data with fixed margins, where heavy tails are weakly identified and tend to degenerate toward the Gaussian case. The asymmetric Clayton and Gumbel copulas trail substantially on both raw fit and information criteria, though they can win occasionally on individual units.
+
+\noindent\textbf{Conclusion.} We choose the Gaussian copula for two primary reasons: (1) it provides the better average fit across model-prompt combinations as evidenced by superior log-likelihood, AIC, and BIC scores; and (2) it is the simplest and most interpretable copula family, requiring only a single correlation parameter while making minimal distributional assumptions about the dependence structure.
+
+Consequently, the bivariate normal copula is both simple and sufficiently accurate for the refusal--incorrectness dependence considered here. Its combination of low assumptions and competitive fit makes it a natural default for estimating the Refusal Index.
+\todo[color=green!40]{y9ka - W6}
+\todo[color=purple!40]{5y9a - W2}
+
+\section{Fixed Endpoints and Shape of Iso-RI Curves}
+\label{app:iso_ri_shape}
+
+We derive two key properties of the accuracy--refusal curve used in the paper:
+(i) every iso-RI curve passes through the same two endpoints at refusal \(r=0\) and \(r=1\); and
+(ii) when the association between \emph{wrongness} and the \emph{refusal score} is stronger (i.e., larger RI), the curve is higher in its interior, creating more curvature relative to the straight line joining its endpoints.
+
+
+Let \((Z_R,Z_W)\) be jointly standard normal with correlation \(\rho\in(-1,1)\).
+Fix thresholds \(\tau_r,\tau_w\in\mathbb R\) and define
+\[
+R := \mathbf{1}\{Z_R>\tau_r\}\quad\text{(refuse)},\qquad
+W := \mathbf{1}\{Z_W>\tau_w\}\quad\text{(wrong under forced answering)}.
+\]
+The refusal rate is \(r:=\Pr(R=1)=1-\Phi(\tau_r)\).
+The unconditional error rate is \(\pi:=\Pr(W=1)=1-\Phi(\tau_w)\), so the correct answer rate (at \(r=0\)) is \(\mu:=1-\pi=\Phi(\tau_w)\), where \(\Phi\) is the standard normal CDF.
+For a given \(r\in(0,1)\) we take \(\tau_r=\Phi^{-1}(1-r)\).
+We define the \emph{correct answer rate} at refusal \(r\) as
+\begin{equation}
+\label{eq:global-acc}
+a(r;\rho)\ :=\ \Pr(\text{correct and answered})
+\ =\ \Pr(W=0,\ R=0)
+\ =\ \Phi_2\!\bigl(\tau_r,\ \tau_w;\ \rho\bigr).
+\end{equation}
+where \(\Phi_2(\cdot,\cdot;\rho)\) is the bivariate standard normal CDF with correlation \(\rho\).
+We orient the score so that higher \(Z_R\) means ``more refuse'' for items more likely to be wrong (the intended setting for RI, typically \(\rho\ge 0\)).
+
+\textbf{Proposition 1 (Endpoints).}
+For any \(\rho\) and \(\tau_w\),
+\[
+a(0;\rho)=\mu\qquad\text{and}\qquad a(1;\rho)=0.
+\]
+
+\emph{Proof.}
+At \(r=0\) we have \(\tau_r=+\infty\), hence
+\(
+a(0;\rho)=\Phi_2(+\infty,\tau_w;\rho)=\Phi(\tau_w)=\mu.
+\)
+At \(r=1\) we have \(\tau_r=-\infty\), hence
+\(
+a(1;\rho)=\Phi_2(-\infty,\tau_w;\rho)=0.
+\)
+\qed
+
+\emph{Monotonicity in \(r\).}
+Since \(\tau_r=\Phi^{-1}(1-r)\) is strictly decreasing in \(r\) and \(\Phi_2\) is increasing in each argument, \(a(r;\rho)\) is strictly decreasing in \(r\) for fixed \(\rho\).
+
+This makes intuitive sense:
+at \(r=0\) we answer everything, so correct answer rate equals the model's overall accuracy \(\mu\).
+As \(r\to 1\) we answer almost nothing, so the correct answer rate approaches \(0\).
+
+\textbf{Proposition 2 (Monotonicity in \(\rho\)).}
+Fix any interior refusal level \(r\in(0,1)\).
+Then \(a(r;\rho)\) in \eqref{eq:global-acc} is strictly increasing in \(\rho\).
+
+\emph{Proof.}
+With \(r\) fixed, \(\tau_r\) is fixed, and
+\(
+a(r;\rho)=\Phi_2(\tau_r,\tau_w;\rho).
+\)
+The standard identity
+\(
+\frac{\partial}{\partial \rho}\Phi_2(x,y;\rho)=\varphi_2(x,y;\rho)>0
+\)
+ implies
+\(
+\frac{d}{d\rho}a(r;\rho)=\varphi_2(\tau_r,\tau_w;\rho)>0.
+\)
+\qed
+
+\textbf{Corollary (Higher curves with higher RI).}
+All accuracy--refusal curves share endpoints \((r,a)=(0,\mu)\) and \((1,0)\) by Proposition~1.
+If \(\rho_2>\rho_1\) (i.e., higher RI), then by Proposition~2,
+\(
+a(r;\rho_2)>a(r;\rho_1)
+\)
+for every \(r\in(0,1)\).
+Thus the higher-RI curve lies strictly above the lower-RI curve throughout the interior while meeting it at the endpoints, creating greater upward curvature relative to the straight line between \((0,\mu)\) and \((1,0)\).
+
+The intuition is straightforward: at a fixed refusal level, the key factor in \eqref{eq:global-acc} is the joint tail probability \(P_{11}(\rho)\).
+As \(\rho\) increases, wrong items and high-refusal items occur together more often, making the kept (non-refused) set cleaner. This increases the correct answer rate at every interior \(r\).
+Since the endpoints are fixed, the entire curve shifts upward.
+
+
+\section{\wigglyblue{Extended Iso-RI Visualizations and Frontier Models}}
+\label{app:iso_ri_models}
+
+\wigglyblue{To complement the theoretical properties above, we provide extended iso-RI visualizations across multiple models. Figure~\ref{fig:iso_ri_models} overlays empirical accuracy--refusal points from the four refusal prompts on top of iso-RI contours for six representative models: Gemma-3-12B, Qwen3-32B, Qwen3-32B-Think, Qwen2.5-72B, DeepSeek-V3-0324, and Mistral-123B. For each model, the four points trace out an accuracy--refusal trade-off curve whose curvature matches a single iso-RI contour when RI is stable, and deviates from it when the model's refusal behaviour is less consistent. This visualization makes it easier to see which models preserve correct answers while increasing refusal rates and which ones lose many correct answers due to false refusals.}\todo[color=yellow!40]{hVoC - Q1.3}
+
+\wigglyblue{We also update the frontier-model scatter plot in \Figref{fig:simpleqa_refusal_vs_accuracy_scatter} so that every point is annotated with the corresponding model name. This labeling lets readers directly identify which model families lie above or below the regression line relating RI to correct answer rate, clarifying how training pipelines and architectures influence knowledge-aware refusal.}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/iso-ri-models.pdf}
+    \vspace{-1.5em}
+    \caption{\wigglyblue{Extended iso-RI visualizations for six models on SimpleQA. Each panel plots empirical accuracy--refusal points from four refusal prompts (dots) together with iso-RI contours (background lines). Models whose points lie close to a single contour have stable Refusal Index across prompts, while widely spread points indicate less consistent refusal behaviour.}}
+    \label{fig:iso_ri_models}
+\end{figure}
+
+
+\section{Results on SimpleQA}
+\label{sec:simpleqa_evaluation}
+
+We provide metrics on all models on SimpleQA in Table~\ref{tab:simpleqa_model_comparison}, the 95\% CI is computed by bootstrap with 1000 samples.
+
+\begin{table*}[h]
+    \centering
+    \tiny
+    \caption{Results on SimpleQA with 95\% CI.}
+    \label{tab:simpleqa_model_comparison}
+    \begin{tabularx}{\textwidth}{X c c c c c c}
+    \toprule
+    \textbf{Model} & \textbf{Correct Answer Rate} & \textbf{Refusal} & \textbf{C / A} & \textbf{F-score} & \textbf{Weighted} & \textbf{Refusal Index} \\
+    \midrule
+    Gemma-3-12B                     & 0.05 [0.04, 0.06] & 0.16 [0.14, 0.17] & 0.06 [0.05, 0.07] & 0.06 [0.05, 0.07] & -0.79 [-0.81, -0.77] & 0.25 [-0.07, 0.19] \\
+    Qwen2.5-72B                    & 0.05 [0.04, 0.05] & 0.74 [0.73, 0.75] & 0.20 [0.18, 0.22] & 0.07 [0.07, 0.08] & -0.21 [-0.22, -0.20] & 0.49 [0.45, 0.53] \\
+    Qwen3-32B                      & 0.03 [0.03, 0.03] & 0.68 [0.67, 0.69] & 0.12 [0.10, 0.15] & 0.05 [0.04, 0.05] & -0.29 [-0.29, -0.28] & 0.34 [0.28, 0.40] \\
+    Qwen3-32B-Think                & 0.04 [0.03, 0.04] & 0.71 [0.70, 0.72] & 0.14 [0.13, 0.16] & 0.06 [0.05, 0.06] & -0.25 [-0.26, -0.24] & 0.34 [0.29, 0.39] \\
+    Qwen3-235B                     & 0.38 [0.37, 0.39] & 0.36 [0.35, 0.37] & 0.59 [0.58, 0.61] & 0.45 [0.44, 0.46] & -0.27 [-0.28, -0.26] & 0.33 [0.30, 0.37] \\
+    Mistral-123B                   & 0.19 [0.18, 0.19] & 0.43 [0.42, 0.44] & 0.34 [0.32, 0.35] & 0.23 [0.22, 0.24] & -0.39 [-0.40, -0.38] & 0.39 [0.35, 0.42] \\
+    Llama-3.1-70B                  & 0.03 [0.02, 0.04] & 0.84 [0.83, 0.86] & 0.21 [0.16, 0.26] & 0.06 [0.04, 0.07] & -0.12 [-0.14, -0.11] & 0.38 [0.28, 0.47] \\
+    GPT-4.1                        & 0.34 [0.32, 0.37] & 0.06 [0.05, 0.07] & 0.36 [0.34, 0.39] & 0.35 [0.33, 0.38] & -0.60 [-0.62, -0.58] & 0.28 [0.19, 0.37] \\
+    GPT-4.1-mini                   & 0.13 [0.12, 0.15] & 0.31 [0.29, 0.33] & 0.19 [0.17, 0.21] & 0.16 [0.14, 0.17] & -0.56 [-0.58, -0.54] & 0.27 [0.19, 0.34] \\
+    Claude-Sonnet-4                & 0.09 [0.07, 0.10] & 0.85 [0.83, 0.86] & 0.58 [0.52, 0.63] & 0.15 [0.13, 0.17] & -0.06 [-0.07, -0.05] & 0.52 [0.45, 0.60] \\
+    Claude-3.5-Haiku               & 0.02 [0.02, 0.03] & 0.93 [0.92, 0.94] & 0.37 [0.29, 0.45] & 0.05 [0.03, 0.06] & -0.04 [-0.05, -0.03] & 0.52 [0.41, 0.63] \\
+    Gemini-2.5-Flash               & 0.19 [0.17, 0.20] & 0.42 [0.39, 0.44] & 0.32 [0.29, 0.35] & 0.24 [0.22, 0.26] & -0.40 [-0.42, -0.37] & 0.30 [0.23, 0.36] \\
+    Gemini-2.5-Flash-Lite          & 0.08 [0.07, 0.09] & 0.41 [0.38, 0.43] & 0.14 [0.12, 0.16] & 0.10 [0.09, 0.12] & -0.51 [-0.53, -0.49] & 0.12 [0.03, 0.20] \\
+    DeepSeek-V3-0324               & 0.16 [0.14, 0.17] & 0.50 [0.48, 0.53] & 0.32 [0.29, 0.35] & 0.21 [0.19, 0.23] & -0.34 [-0.36, -0.32] & 0.42 [0.36, 0.49] \\
+    GLM-4.5                        & 0.06 [0.05, 0.08] & 0.79 [0.77, 0.81] & 0.31 [0.26, 0.35] & 0.11 [0.09, 0.12] & -0.15 [-0.16, -0.13] & 0.30 [0.22, 0.37] \\
+    GLM-4.5-Air                    & 0.05 [0.04, 0.06] & 0.71 [0.69, 0.73] & 0.17 [0.14, 0.20] & 0.08 [0.06, 0.09] & -0.24 [-0.26, -0.23] & 0.15 [0.06, 0.23] \\
+    \bottomrule
+    \end{tabularx}
+    \end{table*}
+
+\section{Impact of Number of Questions}
+\label{sec:impact_of_number_of_questions}
+
+The estimation of RI is derived from the accuracy and refusal rates of our two-pass evaluation. The stability of RI depends on the number of samples in the evaluation dataset. We assess the stability of RI by measuring its variance across subsets of the evaluation data. We create 50 randomly sampled subsets for various sample sizes (from 50 to 2000) and compute the coefficient of variation (CV) for each size, as shown in Figure~\ref{fig:refusal_index_cv_subset}.
+
+RI is less stable than other metrics with a small number of questions. However, its stability becomes comparable as the sample size increases. To achieve a CV of 0.1, RI requires about \textcolor{green!60!black}{25\% more samples}\todo[color=yellow!40]{hVoC - Q1.2} than the C/A and F-score metrics. Consequently, a slightly larger number of samples is preferable for obtaining a stable RI estimate.
+
+\section{Impact of Prompt Design}
+\label{sec:prompt_design_evaluation}
+
+\begin{figure}[t]
+    \centering
+    \begin{minipage}[b]{0.48\textwidth}
+        \centering
+        \vspace{0.8em}
+        \includegraphics[width=\textwidth]{Figures/cv_comparison.pdf}
+        \vspace{0.8em}
+        \caption{Coefficient of variation of RI when evaluating on subsets of the full dataset.}
+        \label{fig:refusal_index_cv_subset}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \vspace{-18.8em}
+        \includegraphics[width=\textwidth]{Figures/prompt_acc_agreement.pdf}
+        \caption{Accuracy agreement between different prompt strategies.}
+        \label{fig:prompt_acc_agreement}
+    \end{minipage}
+\end{figure}
+
+We examine how variations in prompt design affect the RI evaluation. Our experimental setup uses four distinct first-pass prompts, each with different few-shot examples and instructions, to induce varying refusal rates. For the second pass, a single, simpler prompt is used to compel the model to answer all previously refused questions. These prompts are designed to produce different refusal rates. However, we must verify that they do not introduce confounding effects on model accuracy, which would impact the RI calculation.
+
+We measure the accuracy agreement between pairs of prompt strategies to assess this. Agreement is calculated as the proportion of questions for which both prompts yielded the same correctness label, considering only the questions answered by both. The accuracy agreement between different first-pass prompts is consistently high (over 90\%), as shown in Figure~\ref{fig:prompt_acc_agreement}. This indicates that the choice of prompt strategy does not significantly alter the model's underlying accuracy on the questions it chooses to answer. The high agreement involving the forced-answer (second-pass) prompt validates its use for effectively estimating the model's baseline accuracy ($\mu$).
+
+\section{Refusal Index Implementation}
+\label{app:ri_implementation}
+
+We provide a minimal Python code snippet for computing the Refusal Index (RI) using tetrachoric correlation. 
+This code snippet demonstrates the calculation of RI from two-pass evaluation metrics as described in \Secref{sec:refusal_index_method}, and is shown in Figure~\ref{fig:ri_implementation_code}.
+
+\begin{figure}[th]
+\centering
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=Python]
+# Refusal Index from two-pass evaluation metrics
+from math import log
+import numpy as np
+from scipy.stats import norm, multivariate_normal
+from scipy.optimize import minimize_scalar
+
+def RI(acc1: float, r: float, acc2: float, n: int = 2000) -> float:
+    if r <= 0.0 or r >= 1.0:
+        return 0.0
+    mu = 1.0 - acc2                                # wrong rate under forced answering
+    acc_att = np.clip(acc1 / max(1e-12, 1.0 - r), 0.0, 1.0)
+    mu_a = 1.0 - acc_att                           # wrong rate on attempted items
+    mu_r = float(np.clip((mu - (1.0 - r) * mu_a) / r, 0.0, 1.0))  # wrong on refused
+    n_r = int(round(n * r)); n_a = n - n_r
+    n11 = int(round(n_r * mu_r)); n10 = n_r - n11  # (R=1,W=1),(R=1,W=0)
+    n01 = int(round(n_a * mu_a)); n00 = n_a - n01  # (R=0,W=1),(R=0,W=0)
+    tau_r, tau_w = norm.ppf(1 - r), norm.ppf(1 - mu)
+
+    def neg_ll(rho: float) -> float:
+        rv = multivariate_normal(mean=[0, 0], cov=[[1, rho], [rho, 1]])
+        p11 = 1 - norm.cdf(tau_r) - norm.cdf(tau_w) + rv.cdf([tau_r, tau_w])
+        p10, p01, p00 = r - p11, mu - p11, 1 - r - mu + p11
+        eps = 1e-12
+        p11, p10, p01, p00 = [min(1 - eps, max(eps, p)) for p in (p11, p10, p01, p00)]
+        return -(n11 * log(p11) + n10 * log(p10) + n01 * log(p01) + n00 * log(p00))
+
+    rho = minimize_scalar(neg_ll, bounds=(-0.999, 0.999), method="bounded").x
+    return 6 / np.pi * np.arcsin(rho / 2)
+\end{lstlisting}
+\end{minipage}
+\caption{Minimal Python implementation of the Refusal Index estimator using maximum likelihood to fit the tetrachoric correlation implied by two-pass evaluation statistics.}
+\label{fig:ri_implementation_code}
+\end{figure}
+
+The function takes three key parameters: \texttt{acc1} (accuracy on attempted questions in the first pass), \texttt{r} (refusal rate), and \texttt{acc2} (accuracy under forced answering in the second pass). The optional parameter \texttt{n} represents the total number of questions for statistical estimation. The implementation follows the mathematical framework described in Section~\ref{sec:refusal_index_method}, using maximum likelihood estimation to find the tetrachoric correlation coefficient that best explains the observed two-pass evaluation results.
+
+\section{Ranking Stability Metrics}
+\label{app:ranking_metrics}
+
+We use two complementary metrics to evaluate the stability of model rankings across different evaluation settings: Kendall's W and Winner Entropy. These metrics capture different aspects of ranking consistency and are used in Table~\ref{tab:ranking_stability} to assess how reliably different factuality metrics rank models.
+
+\subsection{Kendall's W (Coefficient of Concordance)}
+
+Kendall's W measures the overall agreement among multiple rankings of the same set of items. It quantifies how consistently different evaluation settings (e.g., different refusal rates or benchmarks) rank the models.
+
+Given $m$ evaluation settings ranking $n$ models, let $R_{ij}$ be the rank of model $i$ in evaluation setting $j$. The sum of ranks for model $i$ across all settings is:
+\[
+R_i = \sum_{j=1}^{m} R_{ij}
+\]
+
+Kendall's W is defined as:
+\[
+W = \frac{12 \sum_{i=1}^{n} (R_i - \bar{R})^2}{m^2(n^3 - n)}.
+\]
+where $\bar{R} = \frac{m(n+1)}{2}$ is the mean of the $R_i$ values.
+
+Kendall's W ranges from 0 to 1, where:
+\begin{itemize}
+    \item $W = 1$ indicates perfect agreement among all rankings
+    \item $W = 0$ indicates no agreement (rankings are essentially random)
+    \item Higher values indicate stronger ranking consistency across evaluation settings
+\end{itemize}
+
+In our evaluation, higher Kendall's W values indicate that a metric produces more stable model rankings regardless of the specific evaluation conditions (e.g., different refusal prompts or datasets).
+
+\subsection{Winner Entropy}
+
+Winner Entropy measures the consistency of identifying the top-performing model across different evaluation settings. While Kendall's W considers the entire ranking, Winner Entropy focuses specifically on which model ranks first.
+
+Let $p_i$ be the proportion of evaluation settings where model $i$ ranks first. Winner Entropy is defined as:
+\[
+H_{\text{winner}} = -\sum_{i=1}^{n} p_i \log_n(p_i).
+\]
+where we use base-$n$ logarithm to normalize the entropy to the range $[0, 1]$.
+
+Winner Entropy interpretation:
+\begin{itemize}
+    \item $H_{\text{winner}} = 0$ indicates perfect consistency (same model always ranks first)
+    \item $H_{\text{winner}} = 1$ indicates maximum inconsistency (all models equally likely to rank first)
+    \item Lower values indicate more consistent identification of the best model
+\end{itemize}
+
+This metric is particularly important for practical applications where identifying the single best model is the primary concern, rather than the complete ranking.
+
+\subsection{Application in Our Analysis}
+
+In Table~\ref{tab:ranking_stability}, we apply these metrics to evaluate how different factuality metrics rank models across 8 evaluation settings (4 refusal-varying evaluations on SimpleQA plus 4 hallucination benchmarks). To isolate the ranking stability attributable to accuracy-refusal trade-offs rather than simple accuracy or refusal rate differences, we remove monotonic effects using isotonic regression before computing these metrics. This ensures we measure genuine stability in how metrics capture knowledge-aware refusal rather than stability derived from consistent accuracy or refusal patterns.
+
+\subsection{Isotonic Regression Procedure}
+
+To isolate the components of factuality metrics that cannot be explained by correct answer rate or refusal rate alone, we employ isotonic regression to remove monotonic effects from these baseline metrics. This procedure allows us to focus on how well each metric captures the intrinsic accuracy-refusal trade-off relationship.
+
+\noindent\textbf{Individual Metric Regression}
+For each model $i$ and factuality metric $M$, we have metric values $M_i^{(1)}, M_i^{(2)}, \ldots, M_i^{(k)}$ across $k$ evaluation settings. Similarly, we have corresponding correct answer rates $C_i^{(1)}, C_i^{(2)}, \ldots, C_i^{(k)}$ and refusal rates $R_i^{(1)}, R_i^{(2)}, \ldots, R_i^{(k)}$ for the same model across these settings.
+
+To remove the monotonic effect of correct answer rate, we perform isotonic regression to find the isotonic function $f_C$ that minimizes:
+\[
+\sum_{j=1}^{k} (M_i^{(j)} - f_C(C_i^{(j)}))^2
+\]
+subject to the constraint that $f_C$ is non-decreasing (or non-increasing, depending on the expected monotonic relationship). The residual metric values after removing correct answer rate effects are:
+\[
+M_i^{(j), -C} = M_i^{(j)} - f_C(C_i^{(j)})
+\]
+
+Similarly, to remove refusal rate effects, we find isotonic function $f_R$ and compute:
+\[
+M_i^{(j), -R} = M_i^{(j)} - f_R(R_i^{(j)})
+\]
+
+\noindent\textbf{Additive Isotonic Regression}
+To remove both correct answer rate and refusal rate effects simultaneously, we employ additive isotonic regression. This approach models the metric as the sum of monotonic functions of both variables plus a residual term:
+\[
+M_i^{(j)} = g_C(C_i^{(j)}) + g_R(R_i^{(j)}) + \epsilon_i^{(j)}
+\]
+
+We find isotonic functions $g_C$ and $g_R$ that minimize:
+\[
+\sum_{j=1}^{k} (M_i^{(j)} - g_C(C_i^{(j)}) - g_R(R_i^{(j)}))^2
+\]
+subject to monotonicity constraints on both $g_C$ and $g_R$. This optimization is performed using coordinate descent, alternately optimizing $g_C$ while holding $g_R$ fixed, and vice versa, until convergence.
+
+The residual metric values after removing both effects are:
+\[
+M_i^{(j), -\text{Both}} = M_i^{(j)} - g_C(C_i^{(j)}) - g_R(R_i^{(j)})
+\]
+
+These residuals represent the portion of each metric that cannot be explained by monotonic relationships with correct answer rate or refusal rate, allowing us to assess the intrinsic stability of how each metric captures knowledge-aware refusal properties. The ranking stability metrics (Kendall's W and Winner Entropy) are then computed on these residuals across all models and evaluation settings.
+
+
+\section{\wigglyblue{Comparison with External Calibration Methods}}
+\label{app:external-calibration}
+
+\wigglyblue{Section~\ref{sec:bg} argues that external confidence calibrators---such as linear probes, auxiliary models, or sampling-based confidence---do not necessarily reflect the refusal decisions that a model actually makes. Here we provide a small ablation on Qwen3-32B to compare three representative confidence estimators on the same mixed factual QA set and relate them to the Refusal Index (RI).}\todo[color=yellow!40]{hVoC - W2/Q3}
+
+\begin{table}[t]
+    \centering
+    \footnotesize
+    \caption{\wigglyblue{Comparison of confidence-based calibration methods and Refusal Index (RI). $N$ is the number of evaluation questions, $S$ is the number of samples per question, and $N_{\text{train}}$ is the number of training samples for auxiliary estimators.}}%
+    \vspace{-0.5em}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.2cm} >{\raggedright\arraybackslash}p{3.8cm} c X}
+        \toprule
+        \wigglyblue{\textbf{Method}} &
+        \wigglyblue{\textbf{Typical calibration method(s)}} &
+        \wigglyblue{\textbf{Unbiased?}} &
+        \wigglyblue{\textbf{Computational cost}} \\
+        \midrule
+        \wigglyblue{Linear Probe} &
+        \wigglyblue{Train a linear classifier on hidden states} &
+        \wigglyblue{$\times$} &
+        \wigglyblue{$S N_{\text{train}} d$ probe training + $N$ generations + $N$ inferences} \\
+        \wigglyblue{Black-box Estimator} &
+        \wigglyblue{Auxiliary classifier on output text} &
+        \wigglyblue{$\times$} &
+        \wigglyblue{Calibrator training on $N_{\text{train}}$ samples + $N$ generations + $N$ inferences} \\
+        \wigglyblue{Verbalized Confidence} &
+        \wigglyblue{Ask model to output numeric confidence} &
+        \wigglyblue{$\times$} &
+        \wigglyblue{$N$ generations + $N$ confidence-score generations} \\
+        \wigglyblue{Sampling-based} &
+        \wigglyblue{Use refusal frequency to approximate refusal probability} &
+        \wigglyblue{\checkmark} &
+        \wigglyblue{$S N$ generations} \\
+        \wigglyblue{Refusal Index (ours)} &
+        \wigglyblue{Two-pass evaluation, no auxiliary model} &
+        \wigglyblue{\checkmark} &
+        \wigglyblue{$2N$ generations} \\
+        \bottomrule
+    \end{tabularx}
+    \label{tab:calibration_comparison}
+\end{table}
+\todo[color=green!40]{y9ka - W5}
+
+\paragraph{Experimental setup.}
+\wigglyblue{We compare three representative calibration approaches.
+\textbf{$P(\mathrm{IK})$} represents white-box methods, using a linear classifier trained on the model's internal hidden states to predict whether it knows the answer~\citep{kadavath2022mostlyknow}.
+\textbf{APRICOT} represents auxiliary model-based methods, estimating confidence by analyzing the model's generated reasoning traces with a fine-tuned external model~\citep{ulmer2024apricot}.
+\textbf{$P(\mathrm{Answering})$} represents sampling-based methods, estimating confidence by measuring how frequently the model chooses to answer versus refuse across multiple samples for the same question~\citep{wei2024simpleqa}.
+We evaluate all methods on the same held-out questions to compare their calibration performance.}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/ece_auroc_comparison.pdf}
+    \caption{\wigglyblue{\textbf{Calibration comparison on Qwen3-32B.} 
+    Reliability diagrams (left, 10 bins, lower ECE is better) and ROC curves (right, higher AUROC is better) for three confidence estimation methods: a white-box linear probe $P(\mathrm{IK})$~\citep{kadavath2022mostlyknow}, APRICOT~\citep{ulmer2024apricot}, and sampling-based $P(\mathrm{Answering})$~\citep{wei2024simpleqa}.}}
+    \label{fig:ece-comparison}
+\end{figure}
+
+\paragraph{Observations.}
+\wigglyblue{Figure~\ref{fig:ece-comparison} shows that the three estimators agree on ranking (ROC curves with AUROC $>0.91$), but disagree strongly on calibration shape.
+The linear probe and APRICOT both appear almost perfectly calibrated (ECE $0.098$ and $0.039$) and would suggest that Qwen3-32B is very well calibrated.
+In contrast, $P(\mathrm{Answering})$ exhibits a noticeably higher ECE ($0.122$) and a reliability curve that drops below the diagonal at high predicted probabilities, revealing a clear over-confidence bias in the high-confidence regime. This diagnosis matches the moderate RI of Qwen3-32B on SimpleQA ($\mathrm{RI}\approx 0.34$; see Table~\ref{tab:simpleqa_model_comparison}), which indicates substantial room for improving knowledge-aware refusal.}
+
+\wigglyblue{Taken together with prior work showing that verbalized confidence, sampling-based confidence, and auxiliary calibrators can give inconsistent answers about the same model~\citep{wei2024simpleqa,huang2024rankcalibration}, these results highlight two points: (1) different external calibrators can hide or expose over-confidence depending on how they are constructed, and (2) the sampling-based method that directly uses refusal frequency is the only one whose calibration profile aligns with RI, but it is substantially more expensive to compute. RI therefore provides a cheaper, calibrator-free way to capture the same over-confidence behaviour, using only two standard evaluation passes without additional probes, auxiliary models, or heavy sampling.}\todo[color=green!40]{y9ka - W5}
+
+
+
+\section{LLMs Usage Statement}
+
+During the preparation of this paper, we used LLMs (e.g., ChatGPT) for limited assistance with: (1) proofreading and suggesting edits for grammar issues; (2) formatting LaTeX tables from raw data; (3) generating boilerplate code for dataset loading, logging, and plotting; and (4) identifying relevant prior work during literature review. \textbf{LLMs were not used for generating paper content, developing ideas or experimental designs, or implementing core evaluation code beyond standard auto-completion. All research contributions, experimental results, and written content are the authors' original work.}
+
+\end{document}

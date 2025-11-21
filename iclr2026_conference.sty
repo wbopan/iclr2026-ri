@@ -19,6 +19,10 @@
 \RequirePackage{fancyhdr}
 \RequirePackage{natbib}
 
+% Ensure latexdiff mark commands exist (for diff compilations)
+\providecommand{\DIFdelmark}[1]{}
+\providecommand{\DIFaddmark}[1]{}
+
 % modification to natbib citations
 \setcitestyle{authoryear,round,citesep={;},aysep={,},yysep={;}}
 
@@ -29,6 +33,10 @@
 \newif\ificlrfinal
 \iclrfinalfalse
 \def\iclrfinalcopy{\iclrfinaltrue}
+% Define iclrpreprint, set to true if preprintcopy is defined
+\newif\ificlrpreprint
+\iclrpreprintfalse
+\def\preprintcopy{\iclrpreprinttrue}
 \font\iclrtenhv  = phvb at 8pt
 
 % Specify the dimensions of each page
@@ -91,6 +99,13 @@
   \def\AND{\end{tabular}\hfil\linebreak[4]\hfil
             \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\ignorespaces}%
     \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\@author\end{tabular}%
+\else\ificlrpreprint
+    \lhead{Preprint}
+    \def\And{\end{tabular}\hfil\linebreak[0]\hfil
+            \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\ignorespaces}%
+  \def\AND{\end{tabular}\hfil\linebreak[4]\hfil
+            \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\ignorespaces}%
+    \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\@author\end{tabular}%
 \else
        \lhead{Under review as a conference paper at ICLR 2026}
    \def\And{\end{tabular}\hfil\linebreak[0]\hfil
@@ -98,7 +113,7 @@
   \def\AND{\end{tabular}\hfil\linebreak[4]\hfil
             \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\ignorespaces}%
     \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}Anonymous authors\\Paper under double-blind review\end{tabular}%
-\fi
+\fi\fi
 \vskip 0.3in minus 0.1in}}
 
 \renewenvironment{abstract}{\vskip.075in\centerline{\large\sc
@@ -228,7 +243,7 @@ plus      -0.5ex minus -.2ex}{0.5ex plus
 % \makevruler[<SCALE>][<INITIAL_COUNT>][<STEP>][<DIGITS>][<HEIGHT>]
 \def\iclrruler#1{\makevruler[12pt][#1][1][3][0.993\textheight]\usebox{\iclrrulerbox}}
 \AddToShipoutPicture{%
-\ificlrfinal\else
+\ificlrfinal\else\ificlrpreprint\else
 \iclrruleroffset=\textheight
 \advance\iclrruleroffset by -3.7pt
   \color[rgb]{.7,.7,.7}
@@ -236,7 +251,7 @@ plus      -0.5ex minus -.2ex}{0.5ex plus
     \put(\LenToUnit{-35pt},\LenToUnit{-\iclrruleroffset}){%left ruler
       \iclrruler{\iclrrulercount}}
   }
-\fi
+\fi\fi
 }
 % %% To add a vertical bar on the side
 % \AddToShipoutPicture{
