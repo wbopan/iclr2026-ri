@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ICLR 2026 Poster — Refusal Index</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..900;1,300..900&family=JetBrains+Mono:wght@400;500;600&display=block" rel="stylesheet">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    :root {
+      --teal: #0a4c5c;
+      --teal-light: #0d7a94;
+      --accent: #2e8b57;
+      --accent-light: #e8f5ee;
+      --accent-bd: #4caf50;
+      --red: #d32f2f;
+      --orange: #e65100;
+      --blue: #1565c0;
+      --text: #1a1a1a;
+      --sub: #555;
+      --border: #d0dde3;
+      --grid: #e8e8e8;
+      --form-bg: #f0f7f4;
+      --box-bg: #f5f8fa;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #e0e0e0; display: flex; justify-content: center; padding: 20px; }
+    #poster {
+      width: 3820px; height: 1870px;
+      background: #fff;
+      font-family: "Source Sans 3", sans-serif;
+      color: var(--text);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      background: var(--teal);
+      padding: 32px 50px 28px;
+      border-bottom: 6px solid var(--accent-bd);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 52px; font-weight: 800; color: #fff; line-height: 1.2; }
+    .header .authors { font-size: 24px; font-weight: 500; color: rgba(255,255,255,0.9); margin-top: 14px; }
+    .header .affiliations { font-size: 20px; font-weight: 400; color: rgba(255,255,255,0.7); margin-top: 6px; }
+    .badge {
+      position: absolute; top: 20px; right: 50px;
+      display: flex; align-items: center; gap: 20px;
+      background: rgba(255,255,255,0.12);
+      padding: 10px 24px; border-radius: 10px;
+    }
+    .badge img { height: 72px; object-fit: contain; }
+    .badge img.logo-circle { background: #fff; border-radius: 50%; padding: 6px; }
+
+    /* Columns */
+    .columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 36px;
+      padding: 20px 40px 40px;
+      flex: 1;
+      min-height: 0;
+    }
+    .col {
+      display: flex; flex-direction: column;
+      gap: 0;
+      min-height: 0;
+    }
+
+    /* Section header */
+    .sec-head {
+      background: var(--teal);
+      border-radius: 8px;
+      padding: 10px 20px;
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 18px;
+      flex-shrink: 0;
+    }
+    .sec-num {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .sec-title {
+      font-size: 34px; font-weight: 700; color: #fff;
+      letter-spacing: 1.5px; text-transform: uppercase;
+    }
+
+    /* Content */
+    .col-body {
+      display: flex; flex-direction: column;
+      gap: 20px;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .body-text { font-size: 30px; line-height: 1.5; color: var(--text); padding: 0 4px; }
+    .sub-title { font-size: 34px; font-weight: 700; color: var(--teal); padding: 0 4px; }
+    .hr { height: 2.5px; background: var(--border); border-radius: 1px; margin: 4px 0; }
+
+    /* Boxes */
+    .def-box {
+      background: var(--form-bg); border: 2.5px solid var(--accent-bd);
+      border-radius: 12px; padding: 24px 28px; text-align: center;
+    }
+    .def-box .label { font-size: 34px; font-weight: 700; color: var(--teal); margin-bottom: 16px; }
+    .def-box .formula {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 42px; font-weight: 600; color: var(--text); margin-bottom: 14px;
+    }
+    .def-box .note { font-size: 24px; color: var(--sub); }
+    .def-box .note + .note { margin-top: 4px; }
+
+    .prop-box {
+      background: var(--form-bg); border: 2px solid var(--accent-bd);
+      border-radius: 12px; padding: 22px 24px;
+      flex: 1;
+    }
+    .prop-box .label { font-size: 30px; font-weight: 700; color: var(--teal); margin-bottom: 16px; }
+    .prop-item { display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px; }
+    .prop-item .check { font-size: 28px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+    .prop-item .desc { font-size: 26px; color: var(--text); }
+
+    .highlight-box {
+      background: var(--accent-light); border: 1.5px solid var(--accent);
+      border-radius: 10px; padding: 20px 26px;
+    }
+    .highlight-box strong { font-size: 28px; color: var(--accent); display: block; margin-bottom: 8px; }
+    .highlight-box span { font-size: 25px; color: var(--text); }
+
+    .est-box {
+      background: var(--box-bg); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 22px 26px;
+      flex: 1;
+    }
+    .est-box .label { font-size: 30px; font-weight: 700; color: var(--teal); margin-bottom: 18px; }
+    .est-step { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+    .est-step .num {
+      width: 34px; height: 34px; border-radius: 50%; background: var(--teal);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700; color: #fff; flex-shrink: 0; margin-top: 2px;
+    }
+    .est-step .txt { font-size: 26px; color: var(--text); }
+    .est-step .mono { font-family: "JetBrains Mono", monospace; font-size: 26px; }
+
+    .ta-box {
+      background: var(--form-bg); border: 2px solid var(--accent-bd);
+      border-radius: 12px; padding: 24px 26px;
+      flex: 1;
+    }
+    .ta-box .label { font-size: 32px; font-weight: 700; color: var(--teal); margin-bottom: 18px; }
+    .ta-item { font-size: 26px; line-height: 1.5; color: var(--text); margin-bottom: 16px; padding-left: 4px; }
+
+    /* Limitations bullets */
+    .lim-item { margin-bottom: 12px; padding: 0 4px; }
+    .lim-item .lbl { font-size: 28px; font-weight: 600; color: var(--text); }
+    .lim-item .desc { font-size: 25px; color: var(--sub); padding-left: 16px; margin-top: 6px; }
+
+    /* Tables */
+    .data-table { width: 100%; border-collapse: collapse; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); font-size: 24px; }
+    .data-table th { background: var(--teal); color: #fff; font-weight: 700; padding: 12px 14px; text-align: center; }
+    .data-table th:first-child { text-align: left; padding-left: 16px; }
+    .data-table td { padding: 11px 14px; text-align: center; }
+    .data-table td:first-child { text-align: left; font-weight: 500; padding-left: 16px; }
+    .data-table tr:nth-child(even) { background: #f5f8fa; }
+    .data-table td.hl { background: var(--accent-light); }
+
+    /* Chart containers */
+    .chart { width: 100%; display: flex; justify-content: center; min-height: 0; }
+    .chart svg { display: block; }
+    .chart img { min-height: 0; }
+
+    /* Flowchart */
+    .flow-row { display: flex; gap: 16px; align-items: center; justify-content: center; }
+    .flow-box {
+      border-radius: 10px; padding: 14px 20px; text-align: center;
+      flex: 1; max-width: 380px;
+    }
+    .flow-box.pass1 { background: #e3f2fd; border: 1.5px solid var(--blue); }
+    .flow-box.pass2 { background: #fff3e0; border: 1.5px solid var(--orange); }
+    .flow-box .ftitle { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+    .flow-box.pass1 .ftitle { color: var(--blue); }
+    .flow-box.pass2 .ftitle { color: var(--orange); }
+    .flow-box .fdesc { font-size: 24px; color: var(--text); line-height: 1.4; }
+    .flow-arrow {
+      font-size: 19px; color: var(--sub); text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0;
+    }
+    .flow-arrow .arr { font-size: 32px; color: var(--teal); }
+    .flow-result {
+      background: var(--accent-light); border: 1.5px solid var(--accent);
+      border-radius: 10px; padding: 12px 20px; text-align: center;
+      font-size: 24px; font-weight: 600; color: var(--accent);
+    }
+
+    /* Two-col layout within col 3 */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .split-full { grid-column: 1 / -1; }
+
+    /* Annotation row */
+    .ann-row { display: flex; gap: 0; margin-top: 4px; }
+    .ann-tag {
+      flex: 1; text-align: center; padding: 8px 0;
+      border-radius: 4px; font-size: 20px; font-weight: 600;
+    }
+    .ann-tag.green { background: var(--accent-light); color: var(--accent); }
+    .ann-tag.red { background: #fde8e8; color: var(--red); }
+  </style>
+</head>
+<body>
+<!-- Sizing SVG for PDF export script (detects first SVG's width/height) -->
+<svg id="page-size" width="3820" height="1870" style="position:absolute;pointer-events:none;opacity:0;"><rect width="3820" height="1870" fill="none"/></svg>
+<div id="poster">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="badge">
+      <img src="Figures/logos/cityu.png" alt="CityU">
+      <img src="Figures/logos/hit.png" alt="HIT" class="logo-circle">
+      <img src="Figures/logos/ntu.png" alt="NTU">
+      <img src="Figures/logos/csu.png" alt="CSU" class="logo-circle">
+    </div>
+    <h1>Can LLMs Refuse Questions They Do Not Know? Measuring Knowledge-Aware Refusal in Factual Tasks</h1>
+    <div class="authors">Wenbo Pan¹ (presenter) &nbsp; Jie Xu¹ &nbsp; Qiguang Chen² &nbsp; Junhao Dong³ &nbsp; Libo Qin⁴ &nbsp; Xinfeng Li³* &nbsp; Haining Yu² &nbsp; Xiaohua Jia¹ &nbsp;&nbsp;&nbsp;<span style="color:rgba(255,255,255,0.55)">|&nbsp;&nbsp;&nbsp; ¹City University of Hong Kong &nbsp; ²Harbin Institute of Technology &nbsp; ³Nanyang Technological University &nbsp; ⁴Central South University</span></div>
+  </div>
+
+  <!-- COLUMNS -->
+  <div class="columns">
+
+    <!-- ══════ COLUMN 1: MOTIVATION ══════ -->
+    <div class="col">
+      <div class="sec-head">
+        <div class="sec-num">1</div>
+        <div class="sec-title">Motivation</div>
+      </div>
+      <div class="col-body">
+        <div class="sub-title">Making LLMs Factual is Hard</div>
+        <p class="body-text">LLMs face an inherent tension: reducing hallucination increases over-refusal, and vice versa.</p>
+
+        <!-- Seesaw illustration -->
+        <div class="chart" style="flex:3;min-height:0;">
+          <img src="Figures/seesaw.png" alt="Seesaw: Over-Refusal vs Overconfidence" style="max-width:100%;height:100%;object-fit:contain;border-radius:12px;">
+        </div>
+
+        <div class="hr"></div>
+        <div class="sub-title">Measuring Knowledge-Aware Refusal is Even Harder</div>
+        <p class="body-text">Different models land at different points on the accuracy-refusal plane. But which one makes <em>better</em> refusal decisions?</p>
+
+        <div class="chart" style="flex:3;min-height:0;">
+          <img src="Figures/motivation-scatter.png" alt="Which model makes better refusal decisions?" style="max-width:100%;height:100%;object-fit:contain;border-radius:12px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ COLUMN 2: METHOD ══════ -->
+    <div class="col">
+      <div class="sec-head">
+        <div class="sec-num">2</div>
+        <div class="sec-title">Method</div>
+      </div>
+      <div class="col-body">
+        <div class="def-box">
+          <div class="label">Definition: Refusal Index</div>
+          <div class="formula">RI = ρₛ = Corr(Rank(rᵢ), Rank(wᵢ))</div>
+          <div class="note">Spearman rank correlation between refusal probability rᵢ and error probability wᵢ</div>
+          <div class="note">Perfect knowledge-awareness: wᵢ ≤ wⱼ ⇔ P(refuse xᵢ) ≤ P(refuse xⱼ)</div>
+        </div>
+
+        <div class="sub-title">Accuracy-Refusal Curve</div>
+        <p class="body-text" style="margin-bottom:4px;">Higher RI = more convex curve = better knowledge-aware refusal.</p>
+        <div class="chart" id="arc-chart"></div>
+
+        <div class="est-box">
+          <div class="label">Estimation via Gaussian Copula</div>
+          <div class="est-step"><div class="num">1</div><div class="txt">Observe refusal Rᵢ from Pass 1 and correctness Ŵᵢ from Pass 2</div></div>
+          <div class="est-step"><div class="num">2</div><div class="txt">Compute thresholds: <span class="mono">τᴿ = Φ⁻¹(1−r), τᵂ = Φ⁻¹(1−μ)</span></div></div>
+          <div class="est-step"><div class="num">3</div><div class="txt">Maximize multinomial log-likelihood ℓ(ρ) to estimate ρ̂</div></div>
+          <div class="est-step"><div class="num">4</div><div class="txt">Convert to Spearman: <span class="mono">ρₛ = (6/π) arcsin(ρ̂/2)</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ COLUMN 3: RESULTS & INSIGHTS ══════ -->
+    <div class="col">
+      <div class="sec-head">
+        <div class="sec-num">3</div>
+        <div class="sec-title">Results & Insights</div>
+      </div>
+      <div class="col-body">
+        <p class="body-text" style="font-weight:600;">16 models · 5 datasets · 4 refusal rate settings</p>
+
+        <div class="split">
+          <!-- Left: CV chart -->
+          <div>
+            <div class="sub-title">RI is Stable Across Refusal Rates</div>
+            <div class="chart" id="cv-chart" style="margin-top:6px;"></div>
+          </div>
+          <!-- Right: AUROC chart -->
+          <div>
+            <div class="sub-title">Agreement with Calibration</div>
+            <div class="chart" id="auroc-chart" style="margin-top:6px;"></div>
+          </div>
+
+          <div class="split-full">
+            <div class="highlight-box">
+              <strong>85% correlation with sampling-based AUROC</strong>
+              <span>RI achieves comparable discriminative power with only 2 evaluation passes (vs. 100× sampling).</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="sub-title">Model Family > Model Size</div>
+        <p class="body-text" style="margin-bottom:4px;">Model family is the strongest predictor of RI (R² = 0.235 with accuracy).</p>
+
+        <div class="split">
+          <div>
+            <div class="chart" id="scatter-chart"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="sub-title" style="font-size:20px;">Context Degrades Refusal</div>
+            <table class="data-table" style="font-size:19px;">
+              <tr><th>Model</th><th>Precise</th><th>Counter</th><th>Incons.</th><th>Unans.</th></tr>
+              <tr><td>Gemma-3-12b</td><td>0.36</td><td>0.56</td><td class="hl">0.22</td><td class="hl">0.12</td></tr>
+              <tr><td>Qwen3-32B</td><td>0.48</td><td>0.60</td><td class="hl">0.27</td><td class="hl">0.24</td></tr>
+              <tr><td>Qwen2.5-72B</td><td>0.54</td><td>0.56</td><td class="hl">0.22</td><td class="hl">0.40</td></tr>
+              <tr><td>Llama-3.1-70B</td><td>0.52</td><td>0.70</td><td class="hl">0.17</td><td class="hl">0.31</td></tr>
+              <tr><td>Mistral-Large</td><td>0.50</td><td>0.38</td><td class="hl">0.34</td><td class="hl">0.52</td></tr>
+            </table>
+            <div class="ann-row">
+              <div class="ann-tag green" style="margin-right:4px;">Truth Available</div>
+              <div class="ann-tag red">Truth Unavailable</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ta-box">
+          <div class="label">Key Take-Aways</div>
+          <div class="ta-item"><strong>1.</strong> RI identifies persistent capability gaps in factual tasks that accuracy alone overlooks.</div>
+          <div class="ta-item"><strong>2.</strong> Training pipelines and model family are the strongest predictors of knowledge-aware refusal, not model scale.</div>
+          <div class="ta-item"><strong>3.</strong> Knowledge-aware refusal degrades when ground truth is unavailable in context, suggesting over-reliance on contextual cues.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const C = {
+  teal:"#0a4c5c", accent:"#2e8b57", accentLt:"#e8f5ee",
+  red:"#d32f2f", blue:"#1565c0", orange:"#e65100",
+  text:"#1a1a1a", sub:"#555", grid:"#e8e8e8", plot:"#333", border:"#d0dde3"
+};
+
+// Arrow markers helper
+function addArrows(svg) {
+  const defs = svg.append("defs");
+  [["aG",C.sub],["aGn",C.accent],["aR",C.red],["aT",C.teal]].forEach(([id,c])=>{
+    defs.append("marker").attr("id",id).attr("viewBox","0 0 10 10").attr("refX",9).attr("refY",5)
+      .attr("markerWidth",8).attr("markerHeight",8).attr("orient","auto-start-reverse")
+      .append("path").attr("d","M0 0L10 5L0 10z").attr("fill",c);
+  });
+}
+
+// (Motivation scatter now uses nano-banana generated image)
+
+// ── ACCURACY-REFUSAL CURVE ──
+{
+  const mL=55,mR=15,mT=15,mB=50;
+  const w=620,h=400;
+  const pw=w-mL-mR, ph=h-mT-mB;
+  const svg=d3.select("#arc-chart").append("svg").attr("width",w).attr("height",h);
+  const g=svg.append("g").attr("transform",`translate(${mL},${mT})`);
+  const xs=d3.scaleLinear().domain([0,1]).range([0,pw]);
+  const ys=d3.scaleLinear().domain([0,0.8]).range([ph,0]);
+
+  g.append("rect").attr("width",pw).attr("height",ph).attr("fill","#fff").attr("stroke",C.plot).attr("stroke-width",.8);
+  [.2,.4,.6,.8].forEach(v=>{g.append("line").attr("x1",0).attr("y1",ys(v)).attr("x2",pw).attr("y2",ys(v)).attr("stroke",C.grid).attr("stroke-width",.5);});
+  [.2,.4,.6,.8].forEach(v=>{g.append("line").attr("x1",xs(v)).attr("y1",0).attr("x2",xs(v)).attr("y2",ph).attr("stroke",C.grid).attr("stroke-width",.5);});
+  [0,.2,.4,.6,.8,1].forEach(v=>g.append("text").attr("x",xs(v)).attr("y",ph+20).attr("text-anchor","middle").attr("font-size",14).attr("fill",C.sub).text(v.toFixed(1)));
+  [0,.2,.4,.6,.8].forEach(v=>g.append("text").attr("x",-8).attr("y",ys(v)+4).attr("text-anchor","end").attr("font-size",14).attr("fill",C.sub).text(v.toFixed(1)));
+  g.append("text").attr("x",pw/2).attr("y",ph+42).attr("text-anchor","middle").attr("font-size",17).attr("fill",C.text).text("Refusal Rate");
+  g.append("text").attr("x",-ph/2).attr("y",-40).attr("text-anchor","middle").attr("font-size",17).attr("fill",C.text).attr("transform","rotate(-90)").text("Correct Answer Rate");
+
+  const riV=[0,.2,.4,.6,.8], riC=["#bdbdbd","#a5d6a7","#66bb6a","#2e7d32","#1b5e20"], A=.7;
+  riV.forEach((ri,i)=>{
+    const e=(1-ri)/(1+ri);
+    const pts=d3.range(0,1.01,.02).map(r=>[r,A*Math.pow(1-r,e)]);
+    g.append("path").attr("d",d3.line().x(d=>xs(d[0])).y(d=>ys(d[1])).curve(d3.curveMonotoneX)(pts))
+      .attr("fill","none").attr("stroke",riC[i]).attr("stroke-width",i===0?1.5:2.5).attr("stroke-dasharray",i===0?"6,4":"none");
+  });
+
+  const lx=pw-175,ly=12;
+  g.append("rect").attr("x",lx-8).attr("y",ly-4).attr("width",180).attr("height",riV.length*26+10).attr("rx",5).attr("fill","rgba(255,255,255,.92)").attr("stroke",C.border);
+  riV.forEach((ri,i)=>{
+    g.append("line").attr("x1",lx).attr("y1",ly+i*26+14).attr("x2",lx+30).attr("y2",ly+i*26+14).attr("stroke",riC[i]).attr("stroke-width",2.5).attr("stroke-dasharray",i===0?"6,4":"none");
+    g.append("text").attr("x",lx+40).attr("y",ly+i*26+18).attr("font-size",15).attr("fill",C.text).text(`RI = ${ri.toFixed(1)}`);
+  });
+}
+
+// ── CV BAR CHART ──
+{
+  const mL=50,mR=10,mT=10,mB=36;
+  const w=540,h=340;
+  const pw=w-mL-mR, ph=h-mT-mB;
+  const svg=d3.select("#cv-chart").append("svg").attr("width",w).attr("height",h);
+  const g=svg.append("g").attr("transform",`translate(${mL},${mT})`);
+  const data=[{m:"Accuracy",v:.29},{m:"Refusal",v:.29},{m:"C/A",v:.19},{m:"F-score",v:.21},{m:"Weighted",v:.46},{m:"RI",v:.08}];
+  const xs2=d3.scaleBand().domain(data.map(d=>d.m)).range([0,pw]).padding(.26);
+  const ys2=d3.scaleLinear().domain([0,.5]).range([ph,0]);
+
+  g.append("rect").attr("width",pw).attr("height",ph).attr("fill","#fff").attr("stroke",C.plot).attr("stroke-width",.8);
+  [.1,.2,.3,.4].forEach(v=>{g.append("line").attr("x1",0).attr("y1",ys2(v)).attr("x2",pw).attr("y2",ys2(v)).attr("stroke",C.grid).attr("stroke-width",.5);g.append("text").attr("x",-6).attr("y",ys2(v)+4).attr("text-anchor","end").attr("font-size",13).attr("fill",C.sub).text(v.toFixed(1));});
+  data.forEach(d=>{
+    const isR=d.m==="RI";
+    g.append("rect").attr("x",xs2(d.m)).attr("y",ys2(d.v)).attr("width",xs2.bandwidth()).attr("height",ph-ys2(d.v)).attr("rx",4).attr("fill",isR?C.accent:"#90a4ae");
+    g.append("text").attr("x",xs2(d.m)+xs2.bandwidth()/2).attr("y",ys2(d.v)-8).attr("text-anchor","middle").attr("font-size",16).attr("font-weight",700).attr("fill",isR?C.accent:C.sub).text(d.v.toFixed(2));
+    g.append("text").attr("x",xs2(d.m)+xs2.bandwidth()/2).attr("y",ph+20).attr("text-anchor","middle").attr("font-size",15).attr("font-weight",isR?700:400).attr("fill",isR?C.accent:C.text).text(d.m);
+  });
+  // "~70% lower" badge — positioned above the Weighted bar (tallest), with enough room
+  const badgeY = ys2(.46) - 6;
+  g.append("rect").attr("x",xs2("RI")-16).attr("y",badgeY-22).attr("width",xs2.bandwidth()+32).attr("height",26).attr("rx",13).attr("fill",C.accent);
+  g.append("text").attr("x",xs2("RI")+xs2.bandwidth()/2).attr("y",badgeY-4).attr("text-anchor","middle").attr("font-size",14).attr("font-weight",700).attr("fill","#fff").text("~70% lower");
+  // Arrow from badge to RI bar
+  g.append("line").attr("x1",xs2("RI")+xs2.bandwidth()/2).attr("y1",badgeY+4).attr("x2",xs2("RI")+xs2.bandwidth()/2).attr("y2",ys2(.08)-12).attr("stroke",C.accent).attr("stroke-width",1.5).attr("stroke-dasharray","3,3");
+  g.append("text").attr("x",-ph/2).attr("y",-36).attr("text-anchor","middle").attr("font-size",15).attr("fill",C.text).attr("transform","rotate(-90)").text("CV (lower = more stable)");
+}
+
+// ── AUROC CORRELATION ──
+{
+  const mL=80,mR=50,mT=10,mB=50;
+  const w=540,h=340;
+  const pw=w-mL-mR, ph=h-mT-mB;
+  const svg=d3.select("#auroc-chart").append("svg").attr("width",w).attr("height",h);
+  const g=svg.append("g").attr("transform",`translate(${mL},${mT})`);
+  const data=[{m:"Accuracy",c:-.30},{m:"Refusal",c:.20},{m:"C/A",c:.60},{m:"F-score",c:-.15},{m:"Weighted",c:-.70},{m:"RI",c:.85}];
+  const yb=d3.scaleBand().domain(data.map(d=>d.m)).range([0,ph]).padding(.2);
+  const xl=d3.scaleLinear().domain([-1,1]).range([0,pw]);
+
+  g.append("rect").attr("width",pw).attr("height",ph).attr("fill","#fff").attr("stroke",C.plot).attr("stroke-width",.8);
+  [-.5,0,.5].forEach(v=>g.append("line").attr("x1",xl(v)).attr("y1",0).attr("x2",xl(v)).attr("y2",ph).attr("stroke",v===0?"#aaa":C.grid).attr("stroke-width",v===0?1:.5));
+  [-1,-.5,0,.5,1].forEach(v=>g.append("text").attr("x",xl(v)).attr("y",ph+18).attr("text-anchor","middle").attr("font-size",13).attr("fill",C.sub).text(v.toFixed(1)));
+  data.forEach(d=>{
+    const bw=yb.bandwidth(),isR=d.m==="RI";
+    g.append("rect").attr("x",xl(Math.min(0,d.c))).attr("y",yb(d.m)).attr("width",Math.abs(xl(d.c)-xl(0))).attr("height",bw).attr("rx",3).attr("fill",isR?C.accent:(d.c>=0?"#a5d6a7":"#ef9a9a"));
+    g.append("text").attr("x",-8).attr("y",yb(d.m)+bw/2+5).attr("text-anchor","end").attr("font-size",15).attr("font-weight",isR?700:400).attr("fill",isR?C.accent:C.text).text(d.m);
+    const lbl=d.c>=0?xl(d.c)+8:xl(d.c)-8;
+    g.append("text").attr("x",lbl).attr("y",yb(d.m)+bw/2+5).attr("text-anchor",d.c>=0?"start":"end").attr("font-size",15).attr("font-weight",600).attr("fill",isR?C.accent:C.sub).text(d.c.toFixed(2));
+  });
+  g.append("text").attr("x",pw/2).attr("y",ph+40).attr("text-anchor","middle").attr("font-size",15).attr("fill",C.text).text("Correlation with AUROC P(Answering)");
+}
+
+// ── SCATTER PLOT ──
+{
+  const mL=50,mR=15,mT=10,mB=50;
+  const w=540,h=420;
+  const pw=w-mL-mR, ph=h-mT-mB;
+  const svg=d3.select("#scatter-chart").append("svg").attr("width",w).attr("height",h);
+  const g=svg.append("g").attr("transform",`translate(${mL},${mT})`);
+  const sd=[
+    {a:.05,r:.25,f:"Gemma"},{a:.05,r:.49,f:"Qwen"},{a:.03,r:.34,f:"Qwen"},{a:.04,r:.34,f:"Qwen"},
+    {a:.38,r:.33,f:"Qwen"},{a:.19,r:.39,f:"Mistral"},{a:.03,r:.38,f:"Llama"},{a:.34,r:.28,f:"GPT"},
+    {a:.13,r:.27,f:"GPT"},{a:.09,r:.52,f:"Claude"},{a:.02,r:.52,f:"Claude"},{a:.19,r:.30,f:"Gemini"},
+    {a:.08,r:.12,f:"Gemini"},{a:.16,r:.42,f:"DeepSeek"},{a:.06,r:.30,f:"GLM"},{a:.05,r:.15,f:"GLM"},
+  ];
+  const fc={Claude:"#1565c0",Qwen:"#2e7d32",GPT:"#e65100",Gemini:"#d32f2f",Mistral:"#6a1b9a",Llama:"#00838f",DeepSeek:"#4527a0",GLM:"#bf360c",Gemma:"#827717"};
+  const xs3=d3.scaleLinear().domain([0,.45]).range([0,pw]);
+  const ys3=d3.scaleLinear().domain([0,.6]).range([ph,0]);
+
+  g.append("rect").attr("width",pw).attr("height",ph).attr("fill","#fff").attr("stroke",C.plot).attr("stroke-width",.8);
+  [.1,.2,.3,.4].forEach(v=>{g.append("line").attr("x1",xs3(v)).attr("y1",0).attr("x2",xs3(v)).attr("y2",ph).attr("stroke",C.grid).attr("stroke-width",.5);g.append("text").attr("x",xs3(v)).attr("y",ph+20).attr("text-anchor","middle").attr("font-size",14).attr("fill",C.sub).text(v.toFixed(1));});
+  [.1,.2,.3,.4,.5].forEach(v=>{g.append("line").attr("x1",0).attr("y1",ys3(v)).attr("x2",pw).attr("y2",ys3(v)).attr("stroke",C.grid).attr("stroke-width",.5);g.append("text").attr("x",-8).attr("y",ys3(v)+4).attr("text-anchor","end").attr("font-size",14).attr("fill",C.sub).text(v.toFixed(1));});
+  g.append("line").attr("x1",xs3(0)).attr("y1",ys3(.30)).attr("x2",xs3(.45)).attr("y2",ys3(.30+.235*.45)).attr("stroke","#bbb").attr("stroke-width",1.5).attr("stroke-dasharray","6,4");
+  g.append("text").attr("x",pw-8).attr("y",ys3(.30+.235*.45)-8).attr("text-anchor","end").attr("font-size",14).attr("fill","#999").text("R² = 0.235");
+  sd.forEach(d=>g.append("circle").attr("cx",xs3(d.a)).attr("cy",ys3(d.r)).attr("r",8).attr("fill",fc[d.f]).attr("stroke","#fff").attr("stroke-width",1.5).attr("opacity",.88));
+  g.append("text").attr("x",pw/2).attr("y",ph+42).attr("text-anchor","middle").attr("font-size",16).attr("fill",C.text).text("Correct Answer Rate");
+  g.append("text").attr("x",-ph/2).attr("y",-36).attr("text-anchor","middle").attr("font-size",16).attr("fill",C.text).attr("transform","rotate(-90)").text("Refusal Index");
+
+  const fams=Object.keys(fc);
+  g.append("rect").attr("x",6).attr("y",6).attr("width",280).attr("height",Math.ceil(fams.length/3)*24+10).attr("rx",5).attr("fill","rgba(255,255,255,.92)").attr("stroke",C.border);
+  fams.forEach((f,i)=>{
+    const lx=12+(i%3)*92,ly=14+Math.floor(i/3)*24+10;
+    g.append("circle").attr("cx",lx+6).attr("cy",ly-3).attr("r",5.5).attr("fill",fc[f]);
+    g.append("text").attr("x",lx+17).attr("y",ly).attr("font-size",14).attr("fill",C.text).text(f);
+  });
+}
+</script>
+</body>
+</html>
